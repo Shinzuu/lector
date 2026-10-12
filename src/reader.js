@@ -188,8 +188,8 @@
         }
         cur.items.push(s);
       }
-      sections.forEach((sec, i) => (sec.label = "Section " + (i + 1)));
     }
+    if (!state.pdf) sections.filter((s) => s.items.length).forEach((sec, i) => (sec.label = "Section " + (i + 1)));
     // Long stretches (a whole week of notes under one heading) are cut into parts of about 25 sentences,
     // so each part is narrated quickly and can be skipped on its own.
     const PART = 25;

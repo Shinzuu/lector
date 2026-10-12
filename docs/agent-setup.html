@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lector · Install with an agent</title>
+<meta name="description" content="Paste one prompt into Claude Code, Codex, Cursor or another coding agent and it installs and sets up Lector for you.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="alternate" type="text/markdown" href="agent-setup-prompt.md" title="Agent setup prompt">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#faf7f2;--bg2:#f3eee6;--card:#fff;--ink:#1f1d1a;--mute:#6b665e;--line:#e6dfd4;--acc:#d97757;--acc2:#c4663f;--acc-text:#b25530;--soft:#f6e3d8;--code:#1f1d1a;--code-ink:#f3efe8;color-scheme:light}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14130f;--bg2:#1b1a16;--card:#1f1d19;--ink:#f3efe8;--mute:#a39d93;--line:#2e2b26;--acc-text:#e48a6b;--soft:#3a2a22;--code:#0e0d0b;--code-ink:#ece6dc;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#14130f;--bg2:#1b1a16;--card:#1f1d19;--ink:#f3efe8;--mute:#a39d93;--line:#2e2b26;--acc-text:#e48a6b;--soft:#3a2a22;--code:#0e0d0b;--code-ink:#ece6dc;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--acc-text)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+  nav{display:flex;align-items:center;gap:12px;padding:18px 0;flex-wrap:wrap}
+  nav .brand{display:flex;align-items:center;gap:10px;font:700 22px Fraunces,Georgia,serif;color:var(--ink);text-decoration:none}
+  nav .brand img{width:30px;height:30px}
+  nav .links{margin-left:auto;display:flex;gap:18px;font-size:15px}
+  nav .links a{color:var(--mute);text-decoration:none} nav .links a:hover{color:var(--ink)}
+  h1{font:700 clamp(32px,6vw,52px)/1.08 Fraunces,Georgia,serif;letter-spacing:-.02em;margin:28px 0 14px}
+  h1 em{font-style:normal;color:var(--acc)}
+  h2{font:700 clamp(24px,4vw,32px)/1.2 Fraunces,Georgia,serif;margin:0 0 12px}
+  .lead{font-size:19px;color:var(--mute);margin:0 0 24px;max-width:36em}
+  section{padding:44px 0;border-top:1px solid var(--line)}
+  header{padding-bottom:36px}
+  .agents{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+  .agents li{font-size:14px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--mute);background:var(--card)}
+  ol.how{margin:0;padding-left:22px} ol.how li{margin:6px 0}
+  .muted{color:var(--mute)}
+  code,kbd{font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+  .promptbox{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--code)}
+  .bar{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .bar span{font-size:14px;color:var(--mute);margin-right:auto}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;font:600 15px Inter,system-ui,sans-serif;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:transparent;cursor:pointer}
+  .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff} .btn.primary:hover{background:var(--acc2)}
+  .btn:hover{border-color:var(--acc)}
+  .btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  pre{margin:0;max-height:460px;overflow:auto;padding:18px 16px;color:var(--code-ink);font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+  pre code{all:unset;font:inherit}
+  .asks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0;padding:0;list-style:none}
+  .asks li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .asks b{display:block;margin-bottom:2px}
+  .asks p{margin:0;color:var(--mute);font-size:15.5px}
+  ul.safe{margin:0;padding-left:20px} ul.safe li{margin:8px 0}
+  .note{background:var(--soft);border-radius:14px;padding:14px 16px;font-size:15.5px;margin-top:18px}
+  .keys{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:15.5px;color:var(--mute)}
+  footer{padding:32px 0 48px;border-top:1px solid var(--line);color:var(--mute);font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+  footer a{color:var(--mute)}
+  #status{font-size:14px;color:var(--acc-text);min-height:1em}
+  @media (max-width:640px){.asks{grid-template-columns:1fr}nav .links{gap:14px}body{font-size:16px}.lead{font-size:17px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="index.html"><img src="icon.svg" alt="">Lector</a>
+    <div class="links"><a href="index.html">Home</a><a href="index.html#setup">Manual setup</a><a href="https://github.com/Shinzuu/lector">GitHub</a></div>
+  </nav>
+
+  <header>
+    <h1>Let your coding agent <em>install Lector</em>.</h1>
+    <p class="lead">If you use a coding agent that can run commands and drive a browser, paste the prompt below into it.
+      It downloads Lector, walks you through adding it to Chrome, gets you a free Gemini key and saves it, then checks the
+      reader bar, all without playing a sound. You sign in to Google and make the few clicks Chrome reserves for a human.</p>
+    <ul class="agents" aria-label="Works with">
+      <li>Claude Code + Playwright MCP</li><li>Codex</li><li>Cursor</li><li>any agent with a shell and a browser</li>
+    </ul>
+  </header>
+
+  <section id="prompt">
+    <h2>The prompt</h2>
+    <p class="muted">Copy it whole. It is also available as plain text at <a href="agent-setup-prompt.md">agent-setup-prompt.md</a>, so an agent can fetch it directly.</p>
+    <div class="promptbox">
+      <div class="bar"><span>agent-setup-prompt.md</span><span id="status" role="status" aria-live="polite"></span>
+        <button class="btn primary" id="copy" type="button">Copy prompt</button></div>
+      <pre><code id="prompt-text">Install and set up the Lector Chrome extension for me on this computer. Everything you need is below. Ask me only for the things you cannot do yourself.
+
+&lt;context&gt;
+Lector is a free, open-source (MIT) Chrome extension that reads web pages and PDFs aloud. With a Gemini API key it also explains slides in a tutor's voice ("Narrated" mode) and answers spoken questions.
+
+- Code: https://github.com/Shinzuu/lector
+- Release zip: https://github.com/Shinzuu/lector/releases/latest/download/lector.zip (it unzips to a folder named `lector` with `manifest.json` directly inside)
+- Manual setup steps, to cross-check: https://github.com/Shinzuu/lector#set-up
+- Settings live in the extension's `chrome.storage.local`. The ones that matter here are `provider` ("gemini" or "anthropic"), `geminiKey` and `mode` ("narrated" or "original"). The defaults are already provider "gemini" and mode "narrated", so the only value that has to be saved is the key.
+- A Gemini key is free at https://aistudio.google.com/apikey (Google sign-in needed). Valid keys start with `AIza` and are 39 characters long.
+
+Facts about Chrome that decide how this goes (tested on Chrome 155):
+1. A lasting install of an extension from a folder needs a human: chrome://extensions, Developer mode, Load unpacked, then picking the folder in the operating system's folder picker. Automation cannot drive that picker, and nothing else works:
+   - branded Chrome ignores `--load-extension` (since version 137);
+   - the DevTools method `Extensions.loadUnpacked` (with `--enable-unsafe-extension-debugging`) loads it for the current session only, and Chrome removes it on the next restart;
+   - a synthetic folder drop onto chrome://extensions does nothing.
+2. Chrome refuses `--remote-debugging-port` when the profile lives in the browser's default data directory ("DevTools remote debugging requires a non-default data directory"). Default directories:
+   - Linux: `~/.config/google-chrome` (Chromium `~/.config/chromium`, Edge `~/.config/microsoft-edge`, Brave `~/.config/BraveSoftware/Brave-Browser`)
+   - macOS: `~/Library/Application Support/Google/Chrome` (Edge `.../Microsoft Edge`, Brave `.../BraveSoftware/Brave-Browser`)
+   - Windows: `%LOCALAPPDATA%\Google\Chrome\User Data` (Edge `%LOCALAPPDATA%\Microsoft\Edge\User Data`, Brave `%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data`)
+   So for an everyday profile you cannot script the browser at all; I paste the key into Lector's Options page myself. Only a profile in a custom `--user-data-dir` can be scripted, after a relaunch with a debugging port.
+3. Command-line flags only take effect when no browser process is running on that data directory; otherwise the launch just opens a window in the running browser. Opening a URL that way (`google-chrome --profile-directory=&lt;folder&gt; &lt;url&gt;`) is fine and is how you open pages for me.
+4. Chrome derives an unpacked extension's ID from its folder path. Keeping the same folder keeps the same ID and the same settings when Lector is updated later.
+5. `Extensions.uninstall` deletes the extension's stored settings, `chrome.runtime.reload()` unloads an unpacked extension, and `Extensions.loadUnpacked` on top of my real install replaces it with a session-only one. Use none of them.
+6. Chrome writes extension entries to the profile's `Preferences` file (on Linux, `extensions.settings.&lt;id&gt;.path`; not `Secure Preferences`), sometimes only when it next exits cleanly. The `Local State` file's `profile.info_cache` maps profile folders (`Default`, `Profile 1`) to the names I see.
+7. On some Linux systems the `google-chrome` launcher adds flags from `~/.config/chrome-flags.conf`, so a process's command line can show flags you did not pass. To find a running browser, list processes whose executable is the browser binary itself (`/opt/google/chrome/chrome`, `.../Google Chrome.app/Contents/MacOS/Google Chrome`, `chrome.exe`) and keep only the one without a `--type=` argument; that is the main process. Crash handlers (`chrome_crashpad_handler`) and your own shell also match a loose `pgrep -f` or `pkill -f`, and `pkill -f &lt;dir&gt;` can kill your own shell, so never signal by pattern. On Linux, for example: `ps -eo pid=,args= | awk '$2 ~ /\/chrome$/ &amp;&amp; !/--type=/'`, then signal that one PID.
+&lt;/context&gt;
+
+&lt;task&gt;
+Get Lector installed for good in the browser profile I choose, with my Gemini key saved and Narrated mode on, check that it works without playing any sound, and change nothing else in my browser.
+&lt;/task&gt;
+
+&lt;requirements&gt;
+1. Detect the setup. Find the operating system, which Chromium-based browsers are installed (Chrome, Edge, Brave, Chromium), which are running and with what `--user-data-dir` and `--profile-directory`, and the profiles in each data directory (fact 6). Show me the browsers and profile names and ask which one to install into. Check whether Lector is already installed there: read (do not edit) that profile's `Preferences` and look for an entry under `extensions.settings` whose `path` ends in `lector`. If the profile has no `Preferences` file or no such entry, treat Lector as not installed. Run `node --version` too; the helper script needs Node 22 or newer.
+
+2. Download and unzip to a folder that stays put, because Chrome runs Lector from it:
+   - Linux / macOS: `curl -fsSL -o "${TMPDIR:-/tmp}/lector.zip" https://github.com/Shinzuu/lector/releases/latest/download/lector.zip &amp;&amp; unzip -qo "${TMPDIR:-/tmp}/lector.zip" -d "$HOME"`, giving `~/lector`.
+   - Windows (PowerShell): `Invoke-WebRequest https://github.com/Shinzuu/lector/releases/latest/download/lector.zip -OutFile $env:TEMP\lector.zip; Expand-Archive $env:TEMP\lector.zip -DestinationPath $env:USERPROFILE -Force`, giving `%USERPROFILE%\lector`.
+   Confirm `manifest.json` is directly inside that folder and use its absolute path from here on. If the folder already exists it is an earlier Lector: overwrite it in place, keeping the same path. If Lector was already installed from that folder, skip step 3 and ask me to click the reload arrow on Lector's card in chrome://extensions so the new files load.
+
+3. Install (the one step that always needs me, fact 1):
+   a. Copy the lector folder's absolute path to the clipboard (`wl-copy`, `xclip -selection clipboard`, `pbcopy`, or PowerShell `Set-Clipboard`) and also show it to me.
+   b. Open the extensions page in the chosen profile by running the browser binary with `--profile-directory=&lt;folder&gt; chrome://extensions` (Edge: `edge://extensions`). If no tab opens, ask me to type `chrome://extensions` in the address bar.
+   c. Tell me exactly what to do: switch on Developer mode (top right; bottom left in Edge), click Load unpacked, paste the path into the folder picker (Linux: Ctrl+L, then paste; macOS: Cmd+Shift+G, then paste; Windows: paste into the address bar at the top of the picker), press Enter, and click Select. Ask me to pin Lector from the puzzle-piece menu. Then wait until I say it is done.
+   d. Ask me to read you the ID shown on Lector's card (32 letters a to p). Confirm it later from `Preferences` (fact 6) if the entry is there; if not, my confirmation is enough.
+
+4. Get the Gemini key:
+   a. Open https://aistudio.google.com/apikey in the chosen, signed-in profile: with your browser tool if it can drive that profile, otherwise by running the browser binary with that URL (fact 3).
+   b. If the page asks me to sign in, stop and ask me to sign in, then wait. If Google shows terms to accept, ask me to accept them; do not accept on my behalf.
+   c. Click "Create API key" (accept the suggested project, or create one), or ask me to click it if your tool cannot reach my profile. Then click the copy icon next to the new key, or ask me to. If I already have a key, I can copy it myself and you skip creating one.
+   d. Keep the key out of the conversation. Do not read it from the page into your context, take screenshots or page snapshots while it is visible, or print, echo, log or save it to any file. It goes from the clipboard straight into Lector: by my paste (step 5) or by the helper script's standard input (step 6).
+
+5. Save the settings, everyday profile (default data directory):
+   a. Open Lector's options page in that profile: run the browser binary with `--profile-directory=&lt;folder&gt; chrome-extension://&lt;id&gt;/src/options.html`, or ask me to right-click the Lector icon and choose Options.
+   b. Ask me to paste the key into "Gemini API key", check that "Narrated" is selected, and click Save. Saving writes `provider`, `geminiKey` and `mode` to `chrome.storage.local`. I should see "Saved." next to the button.
+   c. Check it: open https://example.com in that profile and ask me to mute my computer's sound first (muting the tab is not enough, because Lector plays its voice from a hidden extension page), then press Alt+Shift+R. I confirm the reader bar appears at the bottom of the page and close it with Esc.
+
+6. Save the settings, custom profile (non-default data directory), only if I agree to a restart:
+   a. If that browser is running on that data directory, tell me it has to restart with a debugging port, that tabs come back only if "Continue where you left off" is on, and wait for my yes. If I say no, use step 5 instead. Quit it gracefully (macOS `osascript -e 'quit app "Google Chrome"'`; Windows `taskkill /IM chrome.exe` without `/F`; Linux `kill -TERM &lt;pid&gt;` on the main browser process found as in fact 7) and wait until that PID has exited.
+   b. Relaunch it on the same profile with `--user-data-dir=&lt;dir&gt; --profile-directory=&lt;folder&gt; --remote-debugging-port=9333`, detached from your shell, and wait until `http://127.0.0.1:9333/json/version` answers. Do not add `--enable-unsafe-extension-debugging`; nothing here needs it.
+   c. Save the helper script below to a temporary folder (not inside the lector folder) and run it with the key piped from the clipboard, so the key never appears in a command line or in your output: `wl-paste -n | node lector-check.mjs 9333` (X11 `xclip -selection clipboard -o`, macOS `pbpaste`, Windows `powershell -command Get-Clipboard |`). It finds the installed Lector, writes `provider`, `mode` and `geminiKey` from Lector's own options page, checks the key against Gemini's model list, and opens the reader bar on a local test page with speech blocked. Exit code 0 means everything passed; 1 means the settings or the reader bar check failed; 3 means Lector is not installed and enabled in this profile (go back to step 3); 4 means the bar works but the key is missing, malformed or rejected by Gemini (ask me to copy the key again and rerun).
+   d. The debugging port stays open until this browser quits. Tell me, and offer to restart it normally (asking first, as in 6a) to close the port.
+
+7. Once the key is saved and checked, offer to clear the clipboard (`wl-copy --clear`, `xclip -selection clipboard &lt; /dev/null`, `pbcopy &lt; /dev/null`, `Set-Clipboard -Value $null`).
+
+8. Keep the sound off throughout. Never start Lector reading aloud yourself and never press Test voice in Options: I may be listening to something, and setup should be silent. The helper script blocks speech in its check, and in step 5c I press the key with my sound muted.
+&lt;/requirements&gt;
+
+&lt;decisions&gt;
+Already decided:
+- Install folder: `~/lector` (Windows `%USERPROFILE%\lector`), kept permanently.
+- Settings: provider "gemini", mode "narrated", my key. Nothing else.
+- The install itself is my Load unpacked click (fact 1). Step 6 is only for a custom data directory and only with my yes; otherwise step 5.
+
+Your call:
+- If Node 22+ is missing, port the helper script to the CDP client you have (Python `websockets`, or Playwright's `connect_over_cdp`) with the same steps, or fall back to step 5.
+- The debugging port number, if 9333 is taken.
+
+Ask me before:
+- closing or restarting any browser window;
+- choosing a profile, if there is more than one;
+- anything not described here.
+
+Leave everything else alone. Add Lector and its three settings and change nothing else in my browser or profile: do not disable, uninstall, reload or reconfigure other extensions, do not change browser settings or flags beyond the one relaunch in step 6, do not create new profiles or data directories, do not edit `Preferences`, `Secure Preferences` or `Local State` (you only read them), do not copy or move profiles, and do not read cookies, passwords, history or other sites' data. If a step fails, stop and tell me instead of working around it inside my profile.
+&lt;/decisions&gt;
+
+&lt;helper_script&gt;
+Save as `lector-check.mjs` (step 6 only). It reads the key from standard input and prints only its length and whether it looks like a Gemini key.
+
+```js
+// lector-check.mjs: for a Chrome started with --remote-debugging-port on a custom --user-data-dir.
+// Finds the installed Lector, saves its settings, and opens the reader bar once with speech blocked.
+//   &lt;key on stdin&gt; | node lector-check.mjs &lt;port&gt;
+// Empty stdin keeps the current key. The key itself is never printed.
+import { createServer } from "node:http";
+const port = process.argv[2] || "9333";
+const sleep = (ms) =&gt; new Promise((r) =&gt; setTimeout(r, ms));
+let key = "";
+if (!process.stdin.isTTY) for await (const c of process.stdin) key += c;
+key = key.trim();
+
+const ver = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+const ws = new WebSocket(ver.webSocketDebuggerUrl);
+let n = 0; const wait = new Map();
+ws.onmessage = (e) =&gt; { const m = JSON.parse(e.data); wait.get(m.id)?.(m); };
+await new Promise((ok, bad) =&gt; { ws.onopen = ok; ws.onerror = () =&gt; bad(new Error("cannot connect")); });
+const send = (method, params = {}, sessionId) =&gt; new Promise((r) =&gt; { const id = ++n; wait.set(id, r);
+  ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })); });
+const opened = [];
+async function open(url) {
+  const { result: { targetId } } = await send("Target.createTarget", { url, background: true });
+  opened.push(targetId);
+  const { result: { sessionId } } = await send("Target.attachToTarget", { targetId, flatten: true });
+  return async (expression) =&gt; {
+    for (let i = 0; ; i++) {
+      const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }, sessionId);
+      if (!r.result?.exceptionDetails) return r.result?.result?.value;
+      if (i === 19) throw new Error(r.result.exceptionDetails.exception?.description || "evaluate failed");
+      await sleep(300);
+    }
+  };
+}
+async function finish(code) {
+  for (const targetId of opened) await send("Target.closeTarget", { targetId });
+  ws.close(); process.exit(code);
+}
+
+// 1. Find Lector among the installed extensions (read only).
+const ext = await open("chrome://extensions");
+const found = await ext(`new Promise((r) =&gt; chrome.developerPrivate.getExtensionsInfo((l) =&gt;
+  r(l.filter((x) =&gt; x.name === "Lector").map((x) =&gt; ({ id: x.id, state: x.state, location: x.location })))))`);
+console.log("installed: " + JSON.stringify(found));
+const lector = found?.find((x) =&gt; x.state === "ENABLED");
+if (!lector) { console.log("Lector is not installed and enabled in this profile."); await finish(3); }
+
+// 2. Save the settings from Lector's options page, then read them back without the key.
+const opt = await open(`chrome-extension://${lector.id}/src/options.html`);
+const settings = { provider: "gemini", mode: "narrated", ...(key ? { geminiKey: key } : {}) };
+await opt(`chrome.storage.local.set(${JSON.stringify(settings)}).then(() =&gt; 1)`);
+const saved = await opt(`(async () =&gt; {
+  const s = await chrome.storage.local.get(["provider", "mode", "geminiKey"]);
+  const k = s.geminiKey || "";
+  const accepted = k ? (await fetch("https://generativelanguage.googleapis.com/v1beta/models", { headers: { "x-goog-api-key": k } })).ok : null;
+  return { provider: s.provider, mode: s.mode, keyLength: k.length, looksLikeGeminiKey: /^AIza[\\w-]{35}$/.test(k), acceptedByGemini: accepted };
+})()`);
+console.log("settings: " + JSON.stringify(saved));
+
+// 3. Serve a test page on localhost, block speech in Lector's own world, open the bar, read it, close it.
+const html = "&lt;!doctype html&gt;&lt;title&gt;Lector test&lt;/title&gt;&lt;h1&gt;Lector test&lt;/h1&gt;&lt;p&gt;This page checks that the reader bar opens. It has two sentences.&lt;/p&gt;";
+const server = createServer((_, res) =&gt; res.writeHead(200, { "content-type": "text/html" }).end(html)).listen(0, "127.0.0.1");
+await new Promise((r) =&gt; server.once("listening", r));
+const testUrl = `http://127.0.0.1:${server.address().port}/`;
+await open(testUrl);
+await sleep(1500);
+const bar = await opt(`(async () =&gt; {
+  const audioBefore = await chrome.offscreen.hasDocument();
+  const [t] = await chrome.tabs.query({ url: ${JSON.stringify(testUrl + "*")} });
+  const inTab = (o) =&gt; chrome.scripting.executeScript({ target: { tabId: t.id }, ...o });
+  await inTab({ func: () =&gt; {
+    const send = chrome.runtime.sendMessage.bind(chrome.runtime);
+    chrome.runtime.sendMessage = (m, ...a) =&gt; (m &amp;&amp; m.type === "tts" ? Promise.resolve({ ok: true }) : send(m, ...a));
+    speechSynthesis.speak = () =&gt; {};
+  } });
+  await inTab({ files: ["src/reader.js"] });
+  await inTab({ func: () =&gt; window.__lector.command("toggle") });
+  await new Promise((r) =&gt; setTimeout(r, 1500));
+  const [{ result }] = await inTab({ func: () =&gt; {
+    const u = window.__lector._ui, st = window.__lector._state;
+    const out = { barShown: !!u.host?.isConnected, mode: st.mode, status: u.status?.textContent || "" };
+    window.__lector.command("toggle");
+    return out;
+  } });
+  return { ...result, audioStarted: !audioBefore &amp;&amp; (await chrome.offscreen.hasDocument()) };
+})()`);
+console.log("reader bar: " + JSON.stringify(bar));
+server.close();
+if (!(bar?.barShown &amp;&amp; !bar.audioStarted &amp;&amp; saved.provider === "gemini" &amp;&amp; saved.mode === "narrated")) await finish(1);
+await finish(saved.looksLikeGeminiKey &amp;&amp; saved.acceptedByGemini !== false ? 0 : 4);
+```
+&lt;/helper_script&gt;
+
+&lt;verification&gt;
+Before you report, confirm each of these and say how you know:
+- Lector is installed in the chosen profile from the lector folder: my confirmation and its ID, plus the `Preferences` entry or the script's `installed:` line when available.
+- The settings are saved: provider "gemini", mode "narrated", and a 39-character key starting with `AIza`. In step 5 that is the "Saved." message I saw; in step 6 it is `keyLength` 39, `looksLikeGeminiKey` true, and `acceptedByGemini` true when the network allows.
+- The reader bar opened on a test page and no sound played: `barShown` true and `audioStarted` false (step 6), or my confirmation with sound muted (step 5).
+- Every tab, window or process you opened for setup is closed, apart from my own browser.
+- The key appears nowhere in your messages, commands or files.
+&lt;/verification&gt;
+
+&lt;output&gt;
+Finish with a short report:
+- the browser, profile and steps used, and the lector folder path;
+- each check above and its result;
+- anything you could not do and what I should do about it;
+- the three keys to remember: Alt+Shift+R starts or stops reading on any page; A pauses so I can ask a question out loud (say "continue" to go on); S opens the sections list to skip or jump. Also mention that PDF links open in Lector's own viewer, that I should keep the lector folder (Chrome runs Lector from it), and that for PDFs on my computer I can turn on "Allow access to file URLs" in Lector's Details on chrome://extensions.
+&lt;/output&gt;
+</code></pre>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>What the agent does</h2>
+    <ol class="how">
+      <li>Finds your operating system, your Chromium browsers and their profiles, and asks which profile to use.</li>
+      <li>Downloads the latest release and unzips it to <code>~/lector</code> (Windows: <code>%USERPROFILE%\lector</code>). Chrome runs Lector from there, so the folder stays.</li>
+      <li>Opens <code>chrome://extensions</code> for you and puts the folder path on your clipboard. You click <b>Load unpacked</b> and paste it: Chrome only keeps an extension loaded from a folder when a person picks it.</li>
+      <li>Opens Google AI Studio in your signed-in profile to create a free Gemini key. The key goes from the clipboard into Lector's settings without being shown in the chat.</li>
+      <li>Has you paste the key into Lector's Options and click Save, then press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> once with your sound muted to see the reader bar. If your profile lives in a custom <code>--user-data-dir</code> and you allow a restart, the agent saves the key and checks the bar itself, with speech blocked.</li>
+      <li>Reports what it did and the three keys to remember.</li>
+    </ol>
+  </section>
+
+  <section id="asks">
+    <h2>What it will ask you</h2>
+    <ul class="asks">
+      <li><b>Which browser profile</b><p>If you have more than one, so Lector lands where you study.</p></li>
+      <li><b>One folder pick</b><p>Turn on Developer mode, click Load unpacked, paste the path it copied, click Select. Then read it the ID on Lector's card.</p></li>
+      <li><b>Whether it may restart Chrome</b><p>Only for a custom profile folder, and only if you say yes. Tabs return if "Continue where you left off" is on.</p></li>
+      <li><b>Signing in to Google</b><p>If AI Studio shows a sign-in page or new terms, you handle those yourself.</p></li>
+      <li><b>Creating and copying the key</b><p>If the agent can't reach the page, you click "Create API key" and the copy icon.</p></li>
+      <li><b>Pasting the key, then one test</b><p>In Lector's Options, then <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> on example.com with your sound muted. Chrome doesn't let agents script an everyday profile.</p></li>
+    </ul>
+  </section>
+
+  <section id="safety">
+    <h2>Safety notes</h2>
+    <ul class="safe">
+      <li><b>Your key stays private.</b> The prompt tells the agent not to read, print, screenshot or save the key. It travels from the clipboard to Lector's settings, and the agent offers to clear the clipboard afterwards. Lector stores it only in your browser (<code>chrome.storage.local</code>).</li>
+      <li><b>Nothing else in your browser changes.</b> No other extensions are disabled, removed or reloaded, no browser settings are touched, and profile files are only read, never edited.</li>
+      <li><b>It asks before closing Chrome</b>, and it closes every window and helper it opened for setup.</li>
+      <li><b>No sound during setup.</b> The check blocks speech. If you are asked to try the shortcut yourself, mute your computer first.</li>
+      <li><b>No debugging flags on your everyday profile.</b> Chrome refuses them there anyway. For a custom profile, the debugging port stays open until Chrome restarts; the agent tells you and offers to restart it normally.</li>
+      <li><b>Read the prompt before you paste it.</b> It is plain text, and the only code it runs is a short, commented script shown inside it.</li>
+    </ul>
+    <p class="note">Prefer to do it by hand? The <a href="index.html#setup">manual setup</a> takes about three minutes.</p>
+  </section>
+
+  <section id="keys">
+    <h2>After setup</h2>
+    <div class="keys"><span><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> start or stop reading</span><span><kbd>A</kbd> pause and ask</span><span><kbd>S</kbd> sections: skip or jump</span></div>
+  </section>
+
+  <footer>
+    <span>Lector · MIT licence</span>
+    <a href="index.html">Home</a>
+    <a href="https://github.com/Shinzuu/lector">GitHub</a>
+    <a href="https://github.com/Shinzuu/lector/blob/main/AGENTS.md">AGENTS.md</a>
+    <a href="llms.txt">llms.txt</a>
+  </footer>
+</div>
+<script>
+(function () {
+  var btn = document.getElementById("copy");
+  var status = document.getElementById("status");
+  var src = document.getElementById("prompt-text");
+  function done(ok) {
+    status.textContent = ok ? "Copied. Paste it into your agent." : "Copy failed. Select the text and copy it.";
+    btn.textContent = ok ? "Copied" : "Copy prompt";
+    setTimeout(function () { btn.textContent = "Copy prompt"; status.textContent = ""; }, 3000);
+  }
+  function fallback(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed"; ta.style.top = "-1000px"; ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    done(ok);
+  }
+  btn.addEventListener("click", function () {
+    var text = src.textContent;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallback(text); });
+    } else {
+      fallback(text);
+    }
+  });
+})();
+</script>
+</body>
+</html>

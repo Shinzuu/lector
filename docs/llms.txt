@@ -1,0 +1,22 @@
+# Lector
+
+> Lector is a free, open-source (MIT) Chrome extension that reads web pages and PDFs aloud in a natural neural voice, rewrites slides into short spoken explanations ("Narrated" mode) and answers spoken questions when the listener pauses. AI features use the user's own Gemini key (free at https://aistudio.google.com/apikey) or Anthropic key. It is not in the Chrome Web Store; it is installed as an unpacked extension from the release zip.
+
+Keys once installed: Alt+Shift+R starts or stops reading, A pauses to ask a question, S opens the sections list. Settings live in the extension's chrome.storage.local (provider, geminiKey, mode, and others listed in src/llm.js DEFAULTS).
+
+## Install with an agent
+
+- [Agent setup page](https://shinzuu.github.io/lector/agent-setup.html): what the install prompt does, what the agent asks the human, and safety notes
+- [Agent setup prompt (raw)](https://raw.githubusercontent.com/Shinzuu/lector/main/docs/agent-setup-prompt.md): also at https://shinzuu.github.io/lector/agent-setup-prompt.md; paste into any coding agent with shell and browser tools; it downloads Lector, guides the one Load unpacked click Chrome reserves for a human, gets and saves a Gemini key without showing it, and checks the reader bar silently
+- [AGENTS.md](https://github.com/Shinzuu/lector/blob/main/AGENTS.md): repo layout, install notes, tests and rules for agents
+
+## Docs
+
+- [README](https://github.com/Shinzuu/lector/blob/main/README.md): features, manual setup, keys, privacy
+- [Website](https://shinzuu.github.io/lector/): overview with screenshots
+- [Release zip](https://github.com/Shinzuu/lector/releases/latest/download/lector.zip): unzips to a folder named lector with manifest.json inside
+
+## Optional
+
+- [Source code](https://github.com/Shinzuu/lector)
+- [Licence (MIT)](https://github.com/Shinzuu/lector/blob/main/LICENSE)
