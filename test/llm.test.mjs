@@ -29,14 +29,14 @@ function mockFetch(response, status = 200) {
   return calls;
 }
 
-test("gemini request: key in header, system instruction, thinking off for 2.5 flash", async () => {
+test("gemini request: key in header, system instruction, minimal thinking", async () => {
   const calls = mockFetch({ candidates: [{ content: { parts: [{ text: "Fewer seeks." }] } }] });
   const a = await ask({ ...DEFAULTS, geminiKey: "K" }, "why?", ctx, []);
   assert.equal(a, "Fewer seeks.");
-  assert.match(calls[0].url, /models\/gemini-2\.5-flash:generateContent$/);
+  assert.match(calls[0].url, /models\/gemini-3\.5-flash:generateContent$/);
   assert.equal(calls[0].init.headers["x-goog-api-key"], "K");
   assert.ok(!calls[0].url.includes("K"), "key must not be in the URL");
-  assert.equal(calls[0].body.generationConfig.thinkingConfig.thinkingBudget, 0);
+  assert.equal(calls[0].body.generationConfig.thinkingConfig.thinkingLevel, "minimal");
   assert.equal(calls[0].body.contents[0].role, "user");
 });
 

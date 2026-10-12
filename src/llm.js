@@ -4,7 +4,7 @@
 export const DEFAULTS = {
   provider: "gemini",
   geminiKey: "",
-  geminiModel: "gemini-2.5-flash",
+  geminiModel: "gemini-3.5-flash",
   anthropicKey: "",
   anthropicModel: "claude-haiku-4-5-20251001",
   mode: "narrated",
@@ -63,8 +63,9 @@ async function askGemini(s, system, turns, opts = {}) {
     contents: turns.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.text }] })),
     generationConfig: { maxOutputTokens: opts.maxTokens || 700, temperature: 0.4, ...(opts.json ? { responseMimeType: "application/json" } : {}) },
   };
-  // 2.5 Flash thinks by default, which spends the output budget and adds seconds of silence.
+  // Flash models think by default, which spends the output budget and adds seconds of silence.
   if (/2\.5-flash/.test(model)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  else if (/gemini-3/.test(model)) body.generationConfig.thinkingConfig = { thinkingLevel: "minimal" };
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": s.geminiKey },
