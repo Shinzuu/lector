@@ -7,10 +7,11 @@
   "action": { "default_title": "Lector: read this page (Alt+Shift+R)" },
   "background": { "service_worker": "src/background.js", "type": "module" },
   "options_page": "src/options.html",
-  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "offscreen", "declarativeNetRequestWithHostAccess"],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
     "https://api.anthropic.com/*",
+    "wss://speech.platform.bing.com/*",
     "<all_urls>"
   ],
   "commands": {

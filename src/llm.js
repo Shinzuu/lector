@@ -7,6 +7,8 @@ export const DEFAULTS = {
   geminiModel: "gemini-2.5-flash",
   anthropicKey: "",
   anthropicModel: "claude-haiku-4-5-20251001",
+  engine: "edge",
+  edgeVoice: "en-US-AvaMultilingualNeural",
   voiceURI: "",
   rate: 1.1,
   speakAnswers: true,

@@ -60,8 +60,20 @@
 
   <section>
     <h2>Voice</h2>
-    <label for="voiceURI">Voice</label>
-    <select id="voiceURI"></select>
+    <div class="radio">
+      <label><input type="radio" name="engine" value="edge"> Neural (Microsoft, online)</label>
+      <label><input type="radio" name="engine" value="browser"> Chrome's voices</label>
+    </div>
+    <div id="edgeBox">
+      <label for="edgeVoice">Neural voice</label>
+      <select id="edgeVoice"></select>
+      <p class="hint">Near-human voices from the service behind Edge's Read Aloud. Free and needs no account or
+        Edge browser, but it is unofficial, so if it ever stops working Lector switches to Chrome's voices.</p>
+    </div>
+    <div id="browserBox">
+      <label for="voiceURI">Chrome voice</label>
+      <select id="voiceURI"></select>
+    </div>
     <label for="rate">Speed: <span id="rateOut"></span></label>
     <input type="range" id="rate" min="0.7" max="2" step="0.05" style="width:100%">
     <label class="row" style="color:var(--ink);font-size:15px"><input type="checkbox" id="speakAnswers"> Read answers aloud</label>

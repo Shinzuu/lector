@@ -136,16 +136,30 @@
       voices.find((v) => v.lang.startsWith("en")) || null;
   }
 
-  function utter(text, onend) {
+  // Neural voice through the background (Edge), falling back to Chrome's own voices if it fails.
+  function utter(text, onend, next = []) {
+    const token = ++state.token;
+    state.onend = onend;
+    speechSynthesis.cancel();
+    if (state.settings.engine === "edge" && !state.edgeDown) {
+      chrome.runtime.sendMessage({ type: "tts", text, next, token, rate: state.settings.rate, tabId: L.tabId }).then((r) => {
+        if (token !== state.token) return;
+        if (r?.error) { state.edgeDown = true; state.edgeError = r.error; setStatus("Neural voice unavailable, using Chrome voice"); browserUtter(text, token); }
+      }, (e) => { state.edgeError = e?.message; if (token === state.token) { state.edgeDown = true; browserUtter(text, token); } });
+      return;
+    }
+    browserUtter(text, token);
+  }
+  function browserUtter(text, token) {
     const u = new SpeechSynthesisUtterance(text);
     if (state.voice) u.voice = state.voice;
     u.rate = state.settings.rate;
-    const token = ++state.token;
-    u.onend = () => token === state.token && onend && onend();
-    u.onerror = (e) => token === state.token && !/interrupted|canceled/.test(e.error) && onend && onend();
-    speechSynthesis.cancel();
+    u.onend = () => ended(token);
+    u.onerror = (e) => !/interrupted|canceled/.test(e.error) && ended(token);
     setTimeout(() => token === state.token && speechSynthesis.speak(u), 40); // Chrome drops a speak() issued right after cancel()
   }
+  function ended(token) { if (token === state.token && state.onend) state.onend(); }
+  function silence() { state.token++; speechSynthesis.cancel(); chrome.runtime.sendMessage({ type: "tts-stop" }).catch(() => {}); }
 
   function readAt(i) {
     if (i >= state.sentences.length) { stop(); setStatus("Finished"); return; }
@@ -153,10 +167,10 @@
     const s = state.sentences[state.idx];
     highlight(s.range);
     setStatus(`${state.idx + 1} / ${state.sentences.length}`);
-    utter(s.text, () => state.playing && readAt(state.idx + 1));
+    utter(s.text, () => state.playing && readAt(state.idx + 1), state.sentences.slice(state.idx + 1, state.idx + 3).map((x) => x.text));
   }
   function play() { state.playing = true; ui.play.innerHTML = ICON.pause; readAt(state.idx); }
-  function stop() { state.playing = false; state.token++; speechSynthesis.cancel(); if (ui.play) ui.play.innerHTML = ICON.play; }
+  function stop() { state.playing = false; silence(); if (ui.play) ui.play.innerHTML = ICON.play; }
   function step(d) { const was = state.playing; stop(); state.idx = Math.min(Math.max(state.idx + d, 0), state.sentences.length - 1); was ? play() : (highlight(state.sentences[state.idx].range), setStatus(`${state.idx + 1} / ${state.sentences.length}`)); }
 
   function highlight(range) {
@@ -294,21 +308,24 @@
     }`;
   const ui = {};
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const btn = (icon, title, fn, cls = "") => { const b = el("button", cls); b.innerHTML = ICON[icon]; b.title = title; b.setAttribute("aria-label", title); b.onclick = fn; return b; };
+  // Only real clicks and keys count, so a web page cannot script Lector into spending your API key.
+  const trusted = (fn) => (e) => { if (e?.isTrusted !== false) fn(e); };
+  const btn = (icon, title, fn, cls = "") => { const b = el("button", cls); b.innerHTML = ICON[icon]; b.title = title; b.setAttribute("aria-label", title); b.onclick = trusted(fn); return b; };
   const setStatus = (t) => ui.status && (ui.status.textContent = t);
   const setAskStatus = (t) => ui.askStatus && (ui.askStatus.textContent = t);
 
   function buildUI() {
     const host = el("div");
     host.id = "lector-host";
-    const root = host.attachShadow({ mode: "open" });
+    const root = host.attachShadow({ mode: "closed" });
     const style = el("style", null, CSS_TEXT);
     ui.prev = btn("prev", "Previous sentence (←)", () => step(-1));
     ui.play = btn("play", "Play / pause (Space)", () => (state.playing ? stop() : play()), "main");
     ui.next = btn("next", "Next sentence (→)", () => step(1));
     ui.rate = el("span", "rate", state.settings.rate.toFixed(1) + "×");
     ui.rate.title = "Speed: click to change";
-    ui.rate.onclick = () => {
+    ui.rate.onclick = (e) => {
+      if (!e.isTrusted) return;
       const steps = [0.8, 1, 1.1, 1.25, 1.5, 1.75, 2];
       state.settings.rate = steps[(steps.indexOf(state.settings.rate) + 1) % steps.length] || 1;
       ui.rate.textContent = state.settings.rate.toFixed(2).replace(/0$/, "") + "×";
@@ -324,16 +341,16 @@
     ui.cur = el("p", "cur");
     ui.input = el("input");
     ui.input.placeholder = "Why is it like this?";
-    ui.input.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter") submit(); if (e.key === "Escape") resume(); };
+    ui.input.onkeydown = (e) => { e.stopPropagation(); if (!e.isTrusted) return; if (e.key === "Enter") submit(); if (e.key === "Escape") resume(); };
     ui.mic = btn("mic", "Speak your question", () => listen(submit), "mic");
     const row = el("div", "row");
     row.append(ui.input, ui.mic);
     ui.askStatus = el("p", "ask-status");
     ui.answer = el("div");
     const cont = el("button", "pill", "Continue reading");
-    cont.onclick = resume;
+    cont.onclick = trusted(resume);
     const more = el("button", "pill ghost", "Ask more");
-    more.onclick = () => listen(submit, "Listening… ask more");
+    more.onclick = trusted(() => listen(submit, "Listening… ask more"));
     const actions = el("div", "actions");
     actions.append(cont, more);
     ui.panel.append(ui.cur, row, ui.askStatus, ui.answer, actions);
@@ -349,7 +366,7 @@
   }
 
   function onKey(e) {
-    if (!state.open || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!e.isTrusted || !state.open || e.ctrlKey || e.metaKey || e.altKey) return;
     const t = e.composedPath()[0];
     if (t?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t?.tagName)) return;
     const k = e.key;
@@ -396,10 +413,13 @@
       return open(i >= 0 ? i : undefined);
     }
   };
-  L._state = state; // for tests
+  L._state = state; // for tests (isolated world only; pages cannot see it)
+  L._ui = ui;
   L._collect = collect;
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg?.type === "lector" && (msg.tabId == null || msg.tabId === L.tabId)) L.command(msg.cmd);
+    if (msg?.tabId != null && msg.tabId !== L.tabId && L.tabId != null) return;
+    if (msg?.type === "lector") L.command(msg.cmd);
+    if (msg?.type === "lector-tts-ended") ended(msg.token);
   });
 })();

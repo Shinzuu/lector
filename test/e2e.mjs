@@ -36,14 +36,22 @@ function connect(wsUrl) {
   const ws = new WebSocket(wsUrl);
   let id = 0;
   const pending = new Map();
-  ws.addEventListener("message", (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+  const contexts = [];
+  ws.addEventListener("message", (e) => {
+    const m = JSON.parse(e.data);
+    if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+    if (m.method === "Runtime.executionContextCreated") contexts.push(m.params.context);
+    if (m.method === "Runtime.executionContextsCleared") contexts.length = 0;
+  });
   const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
-  const evaluate = async (expression) => {
-    const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+  const evaluate = async (expression, contextId) => {
+    const r = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true, ...(contextId ? { contextId } : {}) });
     if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description || "eval failed");
     return r.result?.result?.value;
   };
-  return new Promise((ok) => ws.addEventListener("open", () => ok({ ws, send, evaluate })));
+  // The reader's panel is a closed shadow root, so tests talk to it from Lector's isolated world.
+  const lectorWorld = () => contexts.filter((c) => c.auxData?.type === "isolated" && c.name === "Lector").pop()?.id;
+  return new Promise((ok) => ws.addEventListener("open", () => ok({ ws, send, evaluate, lectorWorld })));
 }
 
 const results = [];
@@ -64,6 +72,7 @@ try {
   const worker = await connect(sw.webSocketDebuggerUrl);
   const page = await connect(list.find((t) => t.type === "page").webSocketDebuggerUrl);
   await page.send("Page.enable");
+  await page.send("Runtime.enable");
   const shot = async (name) => { const s = await page.send("Page.captureScreenshot", { format: "png" }); writeFileSync(`${shots}/${name}.png`, Buffer.from(s.result.data, "base64")); };
 
   // 1. PDF viewer
@@ -81,9 +90,19 @@ try {
   console.log("      first sentences:", JSON.stringify(pdfSent.sample, null, 0).slice(0, 400));
   await page.evaluate(`window.__lector.command('toggle')`);
   await sleep(800);
-  const pdfUi = await page.evaluate(`(() => ({ bar: !!document.getElementById('lector-host')?.shadowRoot?.querySelector('.bar'),
-    status: document.getElementById('lector-host')?.shadowRoot?.querySelector('.status')?.textContent, hl: CSS.highlights.has('lector-current') }))()`);
+  const pdfUi = await page.evaluate(`(() => ({ bar: !!window.__lector._ui.host?.isConnected,
+    status: window.__lector._ui.status?.textContent, hl: CSS.highlights.has('lector-current') }))()`);
   check("PDF: reader bar and highlight appear", pdfUi.bar && pdfUi.hl, `status "${pdfUi.status}"`);
+  let voice;
+  for (let i = 0; i < 25; i++) {
+    await sleep(1000);
+    voice = await page.evaluate(`({ idx: window.__lector._state.idx, down: !!window.__lector._state.edgeDown })`);
+    if (voice.idx >= 3 || voice.down) break;
+  }
+  voice = await page.evaluate(`({ idx: window.__lector._state.idx, down: !!window.__lector._state.edgeDown, engine: window.__lector._state.settings.engine, err: window.__lector._state.edgeError })`);
+  const off = (await targets()).find((t) => t.url.includes("offscreen.html"));
+  if (off) { const o = await connect(off.webSocketDebuggerUrl); console.log("      offscreen audio:", await o.evaluate(`JSON.stringify({ t: __audio.currentTime, d: __audio.duration, paused: __audio.paused, ended: __audio.ended, err: __audio.error?.message })`)); o.ws.close(); }
+  check("neural voice plays and advances sentence by sentence", voice.engine === "edge" && !voice.down && voice.idx >= 3, JSON.stringify(voice));
   await shot("1-pdf-reading");
 
   // 2. Web page via the same path as the toolbar button
@@ -92,8 +111,11 @@ try {
   const tabId = await worker.evaluate(`chrome.tabs.query({}).then(t => t.find(x => x.url.includes('/page.html')).id)`);
   await worker.evaluate(`chrome.scripting.executeScript({ target: { tabId: ${tabId} }, files: ['src/reader.js'] }).then(() => chrome.tabs.sendMessage(${tabId}, { type: 'lector', cmd: 'toggle' })).then(() => 1)`);
   await sleep(1500);
-  const webUi = await page.evaluate(`(() => { const r = document.getElementById('lector-host')?.shadowRoot; return { bar: !!r?.querySelector('.bar'),
-    status: r?.querySelector('.status')?.textContent || '', hl: CSS.highlights.has('lector-current') }; })()`);
+  const iso = page.lectorWorld();
+  const webUi = await page.evaluate(`(() => { const u = window.__lector._ui; return { bar: !!u.host?.isConnected,
+    status: u.status?.textContent || '', hl: CSS.highlights.has('lector-current') }; })()`, iso);
+  const leak = await page.evaluate(`({ shadow: document.getElementById('lector-host')?.shadowRoot === null, api: typeof window.__lector })`);
+  check("page scripts cannot reach the panel or reader", leak.shadow && leak.api === "undefined", JSON.stringify(leak));
   const total = Number((webUi.status.split("/")[1] || "0").trim());
   check("web page: reader bar appears with sentences", webUi.bar && total > 20, `status "${webUi.status}", highlight ${webUi.hl}`);
   await shot("2-web-reading");
@@ -103,13 +125,15 @@ try {
   await page.send("Input.dispatchKeyEvent", { type: "keyDown", key: "a", code: "KeyA", text: "a" });
   await page.send("Input.dispatchKeyEvent", { type: "keyUp", key: "a", code: "KeyA" });
   await sleep(700);
-  await page.evaluate(`(() => { const r = document.getElementById('lector-host').shadowRoot; const i = r.querySelector('input');
-    i.value = 'Why is this like this?'; i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); return 1; })()`);
+  await page.evaluate(`window.__lector._ui.input.focus(), 1`, iso);
+  await page.send("Input.insertText", { text: "Why is this like this?" });
+  await page.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await page.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
   let askOut = {};
   for (let i = 0; i < 20; i++) {
     await sleep(500);
-    askOut = await page.evaluate(`(() => { const r = document.getElementById('lector-host').shadowRoot; return { open: !r.querySelector('.panel').hidden,
-      cur: r.querySelector('.cur').textContent.slice(0, 80), q: r.querySelector('.q')?.textContent, err: r.querySelector('.err')?.textContent, a: r.querySelector('.a')?.textContent }; })()`);
+    askOut = await page.evaluate(`(() => { const u = window.__lector._ui; return { open: !u.panel.hidden,
+      cur: u.cur.textContent.slice(0, 80), q: u.answer.querySelector('.q')?.textContent, err: u.answer.querySelector('.err')?.textContent, a: u.answer.querySelector('.a')?.textContent }; })()`, iso);
     if (askOut.err || askOut.a) break;
   }
   check("ask: panel opens on A, shows the current sentence", askOut.open && askOut.cur.length > 3, askOut.cur);
