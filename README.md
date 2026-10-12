@@ -1,70 +1,77 @@
 <p align="center"><img src="icons/icon.svg" width="96" alt=""></p>
 <h1 align="center">Lector</h1>
-<p align="center">A Chrome extension that reads web pages and PDFs aloud, highlights each sentence as it goes,<br>
-and lets you pause to ask a question about what you just heard.</p>
+<p align="center"><b>Study by listening. Ask when you get lost.</b><br>
+A free Chrome extension that reads web pages and PDFs aloud in a natural voice, explains slides like a tutor,<br>
+and answers your questions out loud when you pause it.</p>
+<p align="center"><a href="https://shinzuu.github.io/lector/">Website</a> ·
+<a href="https://github.com/Shinzuu/lector/releases/latest/download/lector.zip">Download</a> ·
+<a href="#set-up">Set up</a> · <a href="#use">Use</a> · <a href="#privacy">Privacy</a></p>
 
-## Install
+<p align="center"><img src="docs/img/read.png" width="760" alt="Lector reading a page aloud with captions"></p>
 
-1. Open `chrome://extensions` and turn on **Developer mode**.
-2. Click **Load unpacked** and pick this folder.
-3. Pin Lector, then open its **Options** and paste a free Gemini key from
-   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (or an Anthropic API key).
-4. For PDFs on disk, turn on **Allow access to file URLs** on Lector's card, or use **Open PDF** in the viewer.
+## What it does
+
+- **Reads anything aloud:** any web page, or any PDF in Lector's own viewer, with the current line highlighted and a caption.
+- **Narrated mode:** each slide or section is rewritten as a short spoken explanation. Bullets become sentences, formulas are said in words, and headers, footers, names and page numbers are left out.
+- **Pause and ask:** press `A`, ask out loud, hear the answer, then say "continue".
+- **Sections:** skip slides or headings, jump around, and see how long is left.
+- **Natural voices:** Microsoft's neural voices (Ava, Andrew, Emma, Sonia and more), at 0.8× to 2×.
+
+## Set up
+
+Lector isn't in the Chrome Web Store, so you add it yourself once. Works in Chrome, Edge and Brave.
+
+1. [Download `lector.zip`](https://github.com/Shinzuu/lector/releases/latest/download/lector.zip) and unzip it somewhere you'll keep it. Chrome runs Lector from that folder, so don't delete it.
+2. Open `chrome://extensions` and switch on **Developer mode** (top right).
+3. Click **Load unpacked** and pick the unzipped `lector` folder (the one with `manifest.json` in it). Pin Lector from the puzzle icon.
+4. Get a free Gemini key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey): sign in, click **Create API key**, copy it.
+5. Right-click the Lector icon → **Options**, paste the key, click **Save**. Use **Test voice** to pick a voice.
+6. For PDFs on your computer: on Lector's card in `chrome://extensions`, click **Details** and turn on **Allow access to file URLs**. Or use **Open PDF** in the viewer.
+
+Reading aloud works without a key; the key adds Narrated mode and questions. An Anthropic API key works too.
 
 ## Use
 
 | Key | Does |
 |---|---|
-| `Alt+Shift+R` or the toolbar icon | Start or stop reading. It starts at the first sentence on screen. |
-| `Alt+Shift+A` or `A` | Pause and ask. Speak your question (or type it). The answer is read out. |
-| say “continue” | Resume reading where you paused. Anything else you say is a follow-up question. |
+| Lector icon or `Alt+Shift+R` | Start or stop. Starts from what's on screen. |
 | `Space` | Play / pause |
+| `A` | Pause and ask. Speak or type; say "continue" to go on. |
+| `S` | Sections: untick to skip, click to jump, see time left |
+| `Shift+←` `Shift+→` | Previous / next section (slide or heading) |
 | `←` `→` | Previous / next sentence |
-| `Shift+←` `Shift+→` | Previous / next section (a PDF page, or a heading on a web page) |
-| `S` | Sections list: untick what to skip, click a title to jump |
-| `M` | Switch Narrated / Original |
+| `M` | Narrated / Original |
 | right-click → *Lector: read from here* | Start at the selected text |
 
-PDF links open in Lector's own viewer, because Chrome's built-in PDF viewer cannot run extensions.
+PDF links open in Lector's viewer, because Chrome's built-in PDF viewer doesn't allow extensions.
 
-## Narrated and Original
+Tip: after a chapter, press `A` and say "quiz me on this".
 
-**Narrated** (default when a key is set): before each section is read, the model rewrites it as a short
-spoken explanation, the way a tutor would say it. Course codes, names, dates, page numbers, headers and
-footers are dropped; bullets become sentences; tables become comparisons; formulas are said in words; terms
-are written as they are spoken ("Yarn", "H D F S", "10 terabytes"). Four pages go in one request, the next
-batch is fetched while you listen, and scripts are cached, so a second listen costs nothing. The spoken line
-shows as a caption above the bar.
+## Privacy
 
-**Original** reads the text as written, but first removes text that repeats on most pages (slide headers,
-footers, page numbers) and applies the pronunciation list. Add your own fixes in Options
-(`WORD = how to say it`).
+There is no Lector server. Your key is stored only in your browser (`chrome.storage.local`).
 
-## Voice
+- The text being read goes to Microsoft's online voice service to become speech.
+- In Narrated mode, and when you ask a question, the nearby text goes to the model you chose (Gemini or Claude). On Gemini's free tier Google may use it to improve its models, so avoid private documents there.
+- Spoken questions are transcribed by Chrome's speech recognition (Google).
 
-By default Lector uses Microsoft's neural voices, the ones behind Edge's Read Aloud (Ava, Andrew, Emma,
-Brian, Aria, Sonia and more; pick one in Options). They are free, need no account and no Edge browser, and
-work on Linux. The next two sentences are fetched while the current one plays, so there are no gaps.
+## Good to know
 
-This is an unofficial use of a public endpoint (protocol from the open-source
-[edge-tts](https://github.com/rany2/edge-tts) project). It needs internet, and if Microsoft changes it,
-Lector switches to Chrome's own voices on its own and says so in the bar.
-
-## How questions work
-
-When you ask, Lector sends the model the document title, the last ~30 sentences you heard, the current
-sentence and the next 5, plus your earlier questions from the same pause. The model is told to answer
-from the passage first, to say when it is going beyond it, and to keep the answer short and speakable.
-
-Keys live only in `chrome.storage.local` and go only to the provider you pick. A Claude Code or
-claude.ai login cannot be used: those are subscription logins, not API keys.
+- The neural voices use the service behind Edge's Read Aloud. That's an unofficial use of a public endpoint (protocol from the open-source [edge-tts](https://github.com/rany2/edge-tts) project). If it ever stops working, Lector switches to Chrome's own voices and says so.
+- Narration scripts are cached, so listening again costs no API calls.
+- Mispronounced word? Add it in Options under **Pronunciation fixes** (`Kafka = Kaf-ka`).
 
 ## Develop
 
 ```bash
-node --test test/*.test.mjs                 # prompt + provider request shapes (fetch mocked)
-node test/e2e.mjs some.pdf some.html        # headless Chrome: viewer, web page, ask round trip
+node --test test/*.test.mjs                  # prompts and provider requests (fetch mocked)
+node test/e2e.mjs some.pdf some.html         # headless, muted Chrome: viewer, sections, voice, ask
+node test/screenshots.mjs <gemini-key-file>  # regenerates docs/img from docs/demo.html
 ```
 
-The microphone uses Chrome's Web Speech API (audio goes to Google for recognition). pdf.js 4.10.38 is vendored in `vendor/pdfjs`
-(Apache-2.0).
+Branded Chrome ignores `--load-extension`, so the tests load Lector over the DevTools protocol
+(`--enable-unsafe-extension-debugging`). pdf.js 4.10.38 is vendored in `vendor/pdfjs` (Apache-2.0).
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

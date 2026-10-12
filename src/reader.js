@@ -431,7 +431,9 @@ NoSQL = No S Q L`;
       before: state.heard.slice(-31, -1),
       current: state.items?.[state.i]?.text || "",
       after: (state.items || []).slice(state.i + 1, state.i + 6).map((s) => s.text),
-      sectionText: sec ? sec.items.map((x) => x.text).join("\n").slice(0, 4000) : "",
+      // The source around where you are: the previous section, this one and the next three.
+      sectionText: sec ? state.sections.slice(Math.max(0, state.sec - 1), state.sec + 4)
+        .map((s) => `[${s.label}: ${s.title}]\n` + s.items.map((x) => x.text).join("\n")).join("\n\n").slice(0, 8000) : "",
     };
   }
 
@@ -462,6 +464,7 @@ NoSQL = No S Q L`;
     state.history = [];
     ui.panel.hidden = false;
     ui.list.hidden = true;
+    caption("");
     ui.answer.textContent = "";
     ui.input.value = "";
     ui.cur.textContent = "“" + (state.items?.[state.i]?.text || "") + "”";

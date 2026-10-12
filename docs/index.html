@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lector · listen to anything you need to study</title>
+<meta name="description" content="A free Chrome extension that reads web pages and PDFs aloud in a natural voice, explains slides like a tutor, and answers your questions when you pause.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#faf7f2;--bg2:#f3eee6;--card:#fff;--ink:#1f1d1a;--mute:#6b665e;--line:#e6dfd4;--acc:#d97757;--acc2:#c4663f;--soft:#f6e3d8;color-scheme:light}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14130f;--bg2:#1b1a16;--card:#1f1d19;--ink:#f3efe8;--mute:#a39d93;--line:#2e2b26;--soft:#3a2a22;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#14130f;--bg2:#1b1a16;--card:#1f1d19;--ink:#f3efe8;--mute:#a39d93;--line:#2e2b26;--soft:#3a2a22;color-scheme:dark}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:var(--acc)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  nav{display:flex;align-items:center;gap:12px;padding:18px 0}
+  nav .brand{display:flex;align-items:center;gap:10px;font:700 22px Fraunces,Georgia,serif;color:var(--ink);text-decoration:none}
+  nav .brand img{width:32px;height:32px}
+  nav .links{margin-left:auto;display:flex;gap:20px;font-size:15px}
+  nav .links a{color:var(--mute);text-decoration:none} nav .links a:hover{color:var(--ink)}
+  .hero{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;padding:48px 0 64px}
+  h1{font:700 clamp(38px,6vw,62px)/1.05 Fraunces,Georgia,serif;letter-spacing:-.02em;margin:0 0 18px}
+  h1 em{font-style:normal;color:var(--acc)}
+  .lead{font-size:19px;color:var(--mute);margin:0 0 28px;max-width:34em}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:999px;font-weight:600;font-size:16px;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:transparent}
+  .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff} .btn.primary:hover{background:var(--acc2)}
+  .btn:hover{border-color:var(--acc)}
+  .small{font-size:14px;color:var(--mute)}
+  .shot{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 60px -20px rgb(0 0 0/.25);background:var(--card)}
+  .shot img{display:block;width:100%;height:auto}
+  section{padding:72px 0;border-top:1px solid var(--line)}
+  h2{font:700 clamp(28px,4vw,40px)/1.15 Fraunces,Georgia,serif;letter-spacing:-.01em;margin:0 0 12px}
+  .sub{color:var(--mute);margin:0 0 36px;max-width:40em}
+  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .feature{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+  .feature img{display:block;width:100%;height:auto;border-bottom:1px solid var(--line)}
+  .feature div{padding:18px 20px 22px}
+  .feature h3{margin:0 0 6px;font-size:18px}
+  .feature p{margin:0;color:var(--mute);font-size:15.5px}
+  .steps{counter-reset:s;display:grid;gap:14px;max-width:760px;padding:0;margin:0;list-style:none}
+  .steps li{counter-increment:s;position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 18px 66px}
+  .steps li::before{content:counter(s);position:absolute;left:18px;top:16px;width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--acc);font-weight:700;display:grid;place-items:center}
+  .steps b{display:block;margin-bottom:2px}
+  .steps p{margin:0;color:var(--mute);font-size:15.5px}
+  code,kbd{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}
+  .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .key{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:15px}
+  .key kbd{margin-right:4px}
+  .key span{display:block;color:var(--mute);margin-top:6px}
+  .faq{max-width:760px}
+  details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:10px}
+  summary{cursor:pointer;font-weight:600}
+  details p{color:var(--mute);margin:10px 0 2px;font-size:15.5px}
+  footer{padding:40px 0 56px;border-top:1px solid var(--line);color:var(--mute);font-size:14px;display:flex;gap:16px;flex-wrap:wrap}
+  footer a{color:var(--mute)}
+  @media (max-width:860px){.hero{grid-template-columns:1fr;padding-top:24px}.features{grid-template-columns:1fr}.keys{grid-template-columns:1fr 1fr}nav .links{display:none}}
+  @media (max-width:480px){.keys{grid-template-columns:1fr}.steps li{padding-left:60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="icon.svg" alt="">Lector</a>
+    <div class="links"><a href="#features">Features</a><a href="#setup">Set up</a><a href="#use">How to use</a><a href="#faq">FAQ</a><a href="https://github.com/Shinzuu/lector">GitHub</a></div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Study by <em>listening</em>. Ask when you get lost.</h1>
+      <p class="lead">Lector is a free Chrome extension that reads any web page or PDF aloud in a natural voice, explains
+        slides the way a tutor would, and answers your questions out loud when you pause it.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/Shinzuu/lector/releases/latest/download/lector.zip">Download for Chrome</a>
+        <a class="btn" href="#setup">Set up in 3 minutes</a>
+      </div>
+      <p class="small">Free. Works with Chrome, Edge and Brave on Windows, Mac and Linux.</p>
+    </div>
+    <div class="shot"><img src="img/read.png" alt="Lector reading a revision note aloud, with the current line highlighted and a caption" width="1280" height="800"></div>
+  </header>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Made for revising, not just reading</h2>
+    <p class="sub">Text-to-speech usually reads every page number and footer in a flat voice. Lector cleans the page up first and talks like a person.</p>
+    <div class="features">
+      <div class="feature"><img src="img/pdf.png" alt="A PDF open in Lector's viewer, being read aloud" loading="lazy" width="1280" height="800">
+        <div><h3>Slides and PDFs, explained</h3><p>In Narrated mode each slide becomes a short spoken explanation: bullet points turn into sentences, formulas are said in words, and headers, footers and page numbers are left out.</p></div></div>
+      <div class="feature"><img src="img/ask.png" alt="Asking Lector a question and getting an answer" loading="lazy" width="1280" height="800">
+        <div><h3>Pause and ask</h3><p>Press <kbd>A</kbd> and ask out loud, like "why is it like this?". Lector answers from the page you are on, reads the answer to you, then carries on when you say "continue".</p></div></div>
+      <div class="feature"><img src="img/sections.png" alt="The sections list with time left" loading="lazy" width="1280" height="800">
+        <div><h3>Skip what you don't need</h3><p>See every slide or heading with how long it takes. Untick the boring ones, jump to any part, and watch the time left go down.</p></div></div>
+      <div class="feature"><img src="img/read.png" alt="Captions and progress while reading" loading="lazy" width="1280" height="800">
+        <div><h3>A voice you can listen to for hours</h3><p>Natural neural voices, captions for every line, the current sentence highlighted, and speed from 0.8× to 2×.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="wrap">
+    <h2>Set up in 3 minutes</h2>
+    <p class="sub">Lector isn't in the Chrome Web Store, so you add it yourself. It's a one-time thing.</p>
+    <ol class="steps">
+      <li><b>Download and unzip</b><p>Click <a href="https://github.com/Shinzuu/lector/releases/latest/download/lector.zip">Download for Chrome</a>, then unzip <code>lector.zip</code> somewhere you'll keep it, like your Documents folder. Don't delete the folder afterwards: Chrome runs Lector from it.</p></li>
+      <li><b>Turn on Developer mode</b><p>Open <code>chrome://extensions</code> in Chrome (type it in the address bar) and switch on <b>Developer mode</b> in the top right corner.</p></li>
+      <li><b>Load Lector</b><p>Click <b>Load unpacked</b> and pick the unzipped <code>lector</code> folder (the one with <code>manifest.json</code> inside). Then click the puzzle icon in Chrome's toolbar and pin Lector.</p></li>
+      <li><b>Get a free Gemini key</b><p>Go to <a href="https://aistudio.google.com/apikey">aistudio.google.com/apikey</a>, sign in with Google, click <b>Create API key</b>, and copy it. This powers Narrated mode and questions. Reading aloud works without it.</p></li>
+      <li><b>Paste the key</b><p>Right-click the Lector icon, choose <b>Options</b>, paste the key under <b>Gemini API key</b>, and click <b>Save</b>. Press <b>Test voice</b> to pick the voice you like.</p></li>
+      <li><b>For PDFs on your computer</b><p>Back in <code>chrome://extensions</code>, click <b>Details</b> on Lector and turn on <b>Allow access to file URLs</b>. Or use the <b>Open PDF</b> button in Lector's viewer.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="use">
+  <div class="wrap">
+    <h2>How to use it</h2>
+    <p class="sub">Open a page or PDF, press the Lector icon (or <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>), and listen. It starts from whatever is on screen.</p>
+    <div class="keys">
+      <div class="key"><kbd>Space</kbd> Play / pause<span>Pick up exactly where you stopped.</span></div>
+      <div class="key"><kbd>A</kbd> Ask a question<span>Speak or type. Say "continue" to go on.</span></div>
+      <div class="key"><kbd>S</kbd> Sections<span>Skip parts, jump around, see time left.</span></div>
+      <div class="key"><kbd>Shift</kbd>+<kbd>→</kbd> Next section<span>Next slide or next heading.</span></div>
+      <div class="key"><kbd>←</kbd> <kbd>→</kbd> Sentence<span>Repeat the last line, or skip one.</span></div>
+      <div class="key"><kbd>M</kbd> Narrated / Original<span>Tutor-style explanation, or the text as written.</span></div>
+    </div>
+    <p class="small" style="margin-top:20px">Tip: after a chapter, press <kbd>A</kbd> and say "quiz me on this". Answering out loud makes it stick far better than listening again.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap faq">
+    <h2>Questions</h2>
+    <details><summary>Is it really free?</summary><p>Yes. Lector is free and open source. The Gemini key is free too; Google's free tier is plenty for studying. On the free tier Google may use what you send to improve its models, so don't use it on anything private.</p></details>
+    <details><summary>What gets sent where?</summary><p>Your key stays in your browser. The text being read goes to Microsoft's voice service to turn it into speech. In Narrated mode, and when you ask a question, the nearby text goes to Gemini (or Claude, if you use an Anthropic key). Spoken questions are turned into text by Chrome's speech recognition, which uses Google. Nothing goes to us; there is no server.</p></details>
+    <details><summary>The voice sounds robotic</summary><p>Open Options and check that <b>Neural (Microsoft, online)</b> is selected and pick a voice with <b>Test voice</b>. If the bar ever says "using Chrome's voice", the online voice couldn't be reached; it comes back when you reload the page.</p></details>
+    <details><summary>It mispronounces a word</summary><p>Add it in Options under <b>Pronunciation fixes</b>, one per line, like <code>Kafka = Kaf-ka</code>.</p></details>
+    <details><summary>Nothing happens when I click the icon</summary><p>Chrome doesn't let extensions run on its own pages (<code>chrome://</code>, the Web Store) or on its built-in PDF viewer. For a PDF, click the icon and it reopens in Lector's viewer.</p></details>
+    <details><summary>How do I update?</summary><p>Download the new zip, replace the old folder's contents, and click the reload arrow on Lector in <code>chrome://extensions</code>. Your settings stay.</p></details>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <span>Lector, made by shinzuu.</span>
+    <a href="https://github.com/Shinzuu/lector">Source on GitHub</a>
+    <a href="https://github.com/Shinzuu/lector/blob/main/LICENSE">MIT licence</a>
+    <span>Voices by Microsoft's Read Aloud service (unofficial use); PDF rendering by pdf.js.</span>
+  </footer>
+</div>
+</body>
+</html>
