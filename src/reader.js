@@ -11,7 +11,7 @@
   const state = {
     root: null, pdf: false, sections: [], sec: null, items: null, i: 0, mode: "original", heard: [],
     playing: false, open: false, token: Date.now(), loop: 0, history: [], // tokens increase across tabs and pages
-    settings: { rate: 1.1, voiceURI: "", speakAnswers: true }, voice: null,
+    settings: { rate: 1, voiceURI: "", speakAnswers: true }, voice: null,
   };
 
   // ---------- text -> sentences ----------

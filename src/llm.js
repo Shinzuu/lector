@@ -12,7 +12,7 @@ export const DEFAULTS = {
   engine: "edge",
   edgeVoice: "en-US-AvaMultilingualNeural",
   voiceURI: "",
-  rate: 1.1,
+  rate: 1,
   speakAnswers: true,
 };
 
