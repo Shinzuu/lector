@@ -29,7 +29,7 @@ const profile = "/tmp/lector-e2e-profile";
 rmSync(profile, { recursive: true, force: true });
 const port = 9341;
 const chrome = spawn("google-chrome-stable", ["--headless=new", "--disable-gpu", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
-  "--enable-unsafe-extension-debugging", "--window-size=1280,900", "about:blank"], { stdio: "ignore" });
+  "--enable-unsafe-extension-debugging", "--mute-audio", "--window-size=1280,900", "about:blank"], { stdio: "ignore" });
 
 async function targets() { for (let i = 0; i < 50; i++) { try { return await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(200); } } }
 function connect(wsUrl) {
@@ -88,6 +88,11 @@ try {
   const pdfSent = await page.evaluate(`(() => { const s = window.__lector._collect(); return { n: s.length, sample: s.slice(0, 6).map(x => x.text), long: s.filter(x => x.text.length > 270).length }; })()`);
   check("PDF text splits into sentences", pdfSent.n > 20, `${pdfSent.n} sentences, ${pdfSent.long} over 270 chars`);
   console.log("      first sentences:", JSON.stringify(pdfSent.sample, null, 0).slice(0, 400));
+  const secInfo = await page.evaluate(`(() => { const secs = window.__lector._buildSections(); const texts = secs.flatMap(s => s.items.map(x => x.text));
+    return { n: secs.length, footerTexts: texts.filter(t => /Dept\\. of CSE|Spring 2026|^\\d+ \\/ \\d+$/.test(t)), footer: texts.filter(t => /Dept\\. of CSE|Spring 2026|^\\d+ \\/ \\d+$/.test(t)).length, titles: secs.slice(1, 4).map(s => s.title),
+      say: window.__lector._speakable('YARN stores 10 TB, e.g. in HDFS → fast') }; })()`);
+  check("PDF: one section per page, repeated headers/footers removed", secInfo.n >= 30 && secInfo.footer <= 1, `${secInfo.n} sections, ${secInfo.footer} footer lines left ${JSON.stringify(secInfo.footerTexts)}, e.g. ${JSON.stringify(secInfo.titles)}`);
+  check("pronunciation fixes applied", secInfo.say === "Yarn stores 10 terabytes, for example in H D F S leads to fast", secInfo.say);
   await page.evaluate(`window.__lector.command('toggle')`);
   await sleep(800);
   const pdfUi = await page.evaluate(`(() => ({ bar: !!window.__lector._ui.host?.isConnected,
@@ -96,13 +101,23 @@ try {
   let voice;
   for (let i = 0; i < 25; i++) {
     await sleep(1000);
-    voice = await page.evaluate(`({ idx: window.__lector._state.idx, down: !!window.__lector._state.edgeDown })`);
+    voice = await page.evaluate(`({ idx: window.__lector._state.heard.length, down: !!window.__lector._state.edgeDown })`);
     if (voice.idx >= 3 || voice.down) break;
   }
-  voice = await page.evaluate(`({ idx: window.__lector._state.idx, down: !!window.__lector._state.edgeDown, engine: window.__lector._state.settings.engine, err: window.__lector._state.edgeError })`);
+  voice = await page.evaluate(`({ idx: window.__lector._state.heard.length, down: !!window.__lector._state.edgeDown, engine: window.__lector._state.settings.engine, err: window.__lector._state.edgeError })`);
   const off = (await targets()).find((t) => t.url.includes("offscreen.html"));
   if (off) { const o = await connect(off.webSocketDebuggerUrl); console.log("      offscreen audio:", await o.evaluate(`JSON.stringify({ t: __audio.currentTime, d: __audio.duration, paused: __audio.paused, ended: __audio.ended, err: __audio.error?.message })`)); o.ws.close(); }
-  check("neural voice plays and advances sentence by sentence", voice.engine === "edge" && !voice.down && voice.idx >= 3, JSON.stringify(voice));
+  const neuralLine = "neural voice plays and advances sentence by sentence";
+  check(neuralLine, voice.engine === "edge" && !voice.down && voice.idx >= 3, JSON.stringify(voice));
+  const skip = await page.evaluate(`(async () => { const st = window.__lector._state; st.sections[1].skip = true; st.sections[2].skip = true;
+    st.sec = 0; st.items = null; window.__lector._ui.host; document.dispatchEvent(new Event('noop'));
+    return 1; })()`);
+  // Next section from page 1 must land on page 4 because pages 2 and 3 are skipped (Shift+Right is a trusted key event).
+  await page.send("Input.dispatchKeyEvent", { type: "keyDown", key: "ArrowRight", code: "ArrowRight", modifiers: 8, windowsVirtualKeyCode: 39 });
+  await page.send("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowRight", code: "ArrowRight", modifiers: 8, windowsVirtualKeyCode: 39 });
+  await sleep(1500);
+  const after = await page.evaluate(`window.__lector._state.sections[window.__lector._state.sec].label`);
+  check("next section skips unticked sections", after === "Page 4", after);
   await shot("1-pdf-reading");
 
   // 2. Web page via the same path as the toolbar button
@@ -139,6 +154,18 @@ try {
   check("ask: panel opens on A, shows the current sentence", askOut.open && askOut.cur.length > 3, askOut.cur);
   check("ask: question reaches Gemini and the API error is shown", /Gemini 4\d\d/.test(askOut.err || ""), askOut.err || askOut.a || "no reply");
   await shot("3-ask-panel");
+  // Narrated mode with a bad key: narration fails, Lector says so and keeps reading the original text.
+  await worker.evaluate(`chrome.storage.local.set({ mode: 'narrated' }).then(() => 1)`);
+  await page.send("Page.navigate", { url: `chrome-extension://${extId}/src/viewer.html?file=${encodeURIComponent(base + "/doc.pdf")}` });
+  for (let i = 0; i < 40; i++) { await sleep(500); if (await page.evaluate(`!document.getElementById('read').disabled`).catch(() => false)) break; }
+  await page.evaluate(`window.__lector.command('toggle')`);
+  let nar = {};
+  for (let i = 0; i < 20; i++) {
+    await sleep(800);
+    nar = await page.evaluate(`({ mode: window.__lector._state.mode, heard: window.__lector._state.heard.length, note: window.__lector._ui.note.hidden ? '' : window.__lector._ui.note.textContent })`);
+    if (nar.heard >= 2) break;
+  }
+  check("narrated mode with a bad key falls back to the original text and keeps reading", nar.mode === "narrated" && nar.heard >= 1, JSON.stringify(nar).slice(0, 200));
   await worker.evaluate(`chrome.storage.local.clear().then(() => 1)`);
 } catch (e) {
   check("run without exceptions", false, e.message);

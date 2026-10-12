@@ -31,7 +31,7 @@ export async function installHeaderRule() {
     addRules: [{
       id: 1,
       priority: 1,
-      condition: { urlFilter: `|${WSS}`, resourceTypes: ["websocket"] },
+      condition: { urlFilter: `|${WSS}`, resourceTypes: ["websocket"], initiatorDomains: [chrome.runtime.id] }, // only Lector's own sockets
       action: {
         type: "modifyHeaders",
         requestHeaders: [

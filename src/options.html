@@ -15,7 +15,7 @@
   section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
   h2{font-size:16px;margin:0 0 12px}
   label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
-  input[type=text],input[type=password],select{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+  input[type=text],input[type=password],select,textarea{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
   input:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px}
   .radio{display:flex;gap:18px;margin-top:4px} .radio label{display:flex;gap:6px;align-items:center;margin:0;color:var(--ink);font-size:15px}
   .row{display:flex;gap:10px;align-items:center}
@@ -59,6 +59,22 @@
   </section>
 
   <section>
+    <h2>Reading</h2>
+    <div class="radio">
+      <label><input type="radio" name="mode" value="narrated"> Narrated (recommended)</label>
+      <label><input type="radio" name="mode" value="original"> Original text</label>
+    </div>
+    <p class="hint">Narrated mode has the model rewrite each slide or section as a short spoken explanation: headers,
+      footers and names dropped, bullets turned into sentences, terms written the way they are said. It needs
+      the key above, uses about one request per four pages, and is cached so re-listening is free.
+      Original mode reads the text as written, with repeated headers and footers removed. Switch any time with
+      <kbd>M</kbd> or the chip on the bar.</p>
+    <label for="lexicon">Pronunciation fixes, one per line: <code>WORD = how to say it</code></label>
+    <textarea id="lexicon" rows="5" placeholder="YARN = Yarn&#10;Kafka = Kaf-ka"></textarea>
+    <p class="hint">Applies in both modes and to answers. Built-in fixes already cover YARN, HDFS, ORC, Parquet, JSON, e.g., vs, units like 10 TB, and arrows.</p>
+  </section>
+
+  <section>
     <h2>Voice</h2>
     <div class="radio">
       <label><input type="radio" name="engine" value="edge"> Neural (Microsoft, online)</label>
@@ -87,6 +103,9 @@
       <tr><td><kbd>Alt+Shift+A</kbd> or <kbd>A</kbd></td><td>Pause and ask. Speak, or type. Then say “continue”.</td></tr>
       <tr><td><kbd>Space</kbd></td><td>Play / pause</td></tr>
       <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / next sentence</td></tr>
+      <tr><td><kbd>Shift+←</kbd> <kbd>Shift+→</kbd></td><td>Previous / next section (slide or heading)</td></tr>
+      <tr><td><kbd>S</kbd></td><td>Sections list: untick to skip, click to jump</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Switch Narrated / Original</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Close the question panel, or stop</td></tr>
     </table>
     <p class="hint">Select text and right-click “Lector: read from here” to start at that point. Change shortcuts at <code>chrome://extensions/shortcuts</code>.</p>

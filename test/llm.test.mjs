@@ -55,3 +55,27 @@ test("missing key and API errors give readable messages", async () => {
   mockFetch({ error: { message: "API key not valid" } }, 400);
   await assert.rejects(ask({ ...DEFAULTS, geminiKey: "bad" }, "q", ctx), /Gemini 400: API key not valid/);
 });
+
+import { buildNarrationPrompt, parseNarration, narrate } from "../src/llm.js";
+
+test("narration prompt wraps each section with its id and asks for spoken terms", () => {
+  const p = buildNarrationPrompt("W05", [{ id: 2, text: "YARN\n• RM schedules" }, { id: 3, text: "HDFS" }]);
+  assert.match(p.turns[0].text, /<section id="2">\nYARN\n• RM schedules\n<\/section>/);
+  assert.match(p.system, /"Yarn"/);
+  assert.match(p.system, /H D F S/);
+  assert.match(p.system, /\{"sections":\[/);
+});
+
+test("narration JSON is parsed by id, missing ids become empty", () => {
+  const out = parseNarration('```json\n{"sections":[{"id":"3","narration":"Yarn schedules."}]}\n```', [2, 3]);
+  assert.deepEqual(out, [{ id: 2, narration: "" }, { id: 3, narration: "Yarn schedules." }]);
+  assert.throws(() => parseNarration("sorry", [1]), /not JSON/);
+});
+
+test("gemini narration asks for JSON output", async () => {
+  const calls = mockFetch({ candidates: [{ content: { parts: [{ text: '{"sections":[{"id":0,"narration":"Hi."}]}' }] } }] });
+  const out = await narrate({ ...DEFAULTS, geminiKey: "K" }, "T", [{ id: 0, text: "x" }]);
+  assert.equal(out[0].narration, "Hi.");
+  assert.equal(calls[0].body.generationConfig.responseMimeType, "application/json");
+  assert.equal(calls[0].body.generationConfig.maxOutputTokens, 4000);
+});

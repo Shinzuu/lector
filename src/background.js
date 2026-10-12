@@ -1,4 +1,4 @@
-import { DEFAULTS, ask } from "./llm.js";
+import { DEFAULTS, ask, narrate, hasKey } from "./llm.js";
 import { installHeaderRule } from "./edge-tts.js";
 
 const VIEWER = chrome.runtime.getURL("src/viewer.html");
@@ -44,11 +44,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     return true; // keep the channel open for the async reply
   }
   if (msg?.type === "settings") {
-    chrome.storage.local.get(DEFAULTS).then((s) => reply({ engine: s.engine, voiceURI: s.voiceURI, rate: s.rate, speakAnswers: s.speakAnswers }));
+    chrome.storage.local.get(DEFAULTS).then((s) => reply({ engine: s.engine, voiceURI: s.voiceURI, rate: s.rate, speakAnswers: s.speakAnswers, mode: s.mode, lexicon: s.lexicon, hasKey: hasKey(s) }));
     return true;
   }
+  if (msg?.type === "narrate") { narrateCached(msg).then(reply, (e) => reply({ error: e.message })); return true; }
   if (msg?.type === "tts") { speak(msg, _sender).then(reply, (e) => reply({ error: e.message })); return true; }
-  if (msg?.type === "tts-stop") { playing = null; offscreen({ type: "stop" }).catch(() => {}); }
+  if (msg?.type === "tts-stop") { if (!playing || playing.token <= msg.token) playing = null; offscreen({ type: "stop", token: msg.token }, { create: false }).catch(() => {}); }
   if (msg?.type === "tts-ended" && playing && msg.token === playing.token) {
     const { tabId, viewer, token } = playing;
     playing = null;
@@ -58,16 +59,45 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg?.type === "options") chrome.runtime.openOptionsPage();
 });
 
+// ---------- narration ----------
+// Scripts are cached by a hash of the model and section text, so re-listening costs no API calls.
+async function cacheKey(model, text) {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(model + "\n" + text));
+  return "narr1:" + [...new Uint8Array(h)].slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function narrateCached(msg) {
+  const s = await chrome.storage.local.get(DEFAULTS);
+  if (!hasKey(s)) throw new Error("no API key");
+  const model = s.provider === "anthropic" ? s.anthropicModel : s.geminiModel;
+  const keys = await Promise.all(msg.sections.map((x) => cacheKey(model, x.text)));
+  const cached = await chrome.storage.local.get(keys);
+  const missing = msg.sections.filter((_, i) => cached[keys[i]] == null);
+  if (missing.length) {
+    const fresh = await narrate(s, msg.title, missing);
+    const put = {};
+    for (const f of fresh) put[keys[msg.sections.findIndex((x) => x.id === f.id)]] = f.narration;
+    await chrome.storage.local.set(put);
+    Object.assign(cached, put);
+  }
+  return { sections: msg.sections.map((x, i) => ({ id: x.id, narration: cached[keys[i]] || "" })) };
+}
+
 // ---------- neural voice ----------
 // The reader sends one sentence at a time plus the next couple; the offscreen page fetches, caches and plays.
 let playing = null; // { tabId, viewer, token }
 let ruleReady = null;
 
-async function offscreen(msg) {
+let docReady = null;
+async function offscreen(msg, { create = true } = {}) {
   ruleReady ||= installHeaderRule();
   await ruleReady;
   if (!(await chrome.offscreen.hasDocument())) {
-    await chrome.offscreen.createDocument({ url: "src/offscreen.html", reasons: ["AUDIO_PLAYBACK"], justification: "Play the read-aloud voice" });
+    if (!create) return { ok: true };
+    // One shared promise: two messages arriving together must not both try to create the document.
+    docReady ||= chrome.offscreen.createDocument({ url: "src/offscreen.html", reasons: ["AUDIO_PLAYBACK"], justification: "Play the read-aloud voice" })
+      .finally(() => (docReady = null));
+    await docReady;
   }
   return chrome.runtime.sendMessage({ target: "offscreen", ...msg });
 }

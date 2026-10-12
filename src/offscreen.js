@@ -41,6 +41,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     return true;
   }
   if (msg.type === "stop") {
+    // A stop can arrive after the play that followed it; ignore stops older than what is playing.
+    if (current != null && msg.token != null && current > msg.token) return reply({ ok: true, stale: true });
     current = null;
     audio.pause();
     reply({ ok: true });

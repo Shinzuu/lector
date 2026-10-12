@@ -20,9 +20,25 @@ and lets you pause to ask a question about what you just heard.</p>
 | say “continue” | Resume reading where you paused. Anything else you say is a follow-up question. |
 | `Space` | Play / pause |
 | `←` `→` | Previous / next sentence |
+| `Shift+←` `Shift+→` | Previous / next section (a PDF page, or a heading on a web page) |
+| `S` | Sections list: untick what to skip, click a title to jump |
+| `M` | Switch Narrated / Original |
 | right-click → *Lector: read from here* | Start at the selected text |
 
 PDF links open in Lector's own viewer, because Chrome's built-in PDF viewer cannot run extensions.
+
+## Narrated and Original
+
+**Narrated** (default when a key is set): before each section is read, the model rewrites it as a short
+spoken explanation, the way a tutor would say it. Course codes, names, dates, page numbers, headers and
+footers are dropped; bullets become sentences; tables become comparisons; formulas are said in words; terms
+are written as they are spoken ("Yarn", "H D F S", "10 terabytes"). Four pages go in one request, the next
+batch is fetched while you listen, and scripts are cached, so a second listen costs nothing. The spoken line
+shows as a caption above the bar.
+
+**Original** reads the text as written, but first removes text that repeats on most pages (slide headers,
+footers, page numbers) and applies the pronunciation list. Add your own fixes in Options
+(`WORD = how to say it`).
 
 ## Voice
 

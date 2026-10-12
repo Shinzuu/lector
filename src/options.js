@@ -2,7 +2,7 @@ import { DEFAULTS } from "./llm.js";
 import { EDGE_VOICES } from "./edge-tts.js";
 
 const $ = (id) => document.getElementById(id);
-const fields = ["geminiKey", "geminiModel", "anthropicKey", "anthropicModel", "edgeVoice", "voiceURI", "rate", "speakAnswers"];
+const fields = ["geminiKey", "geminiModel", "anthropicKey", "anthropicModel", "edgeVoice", "voiceURI", "rate", "speakAnswers", "lexicon"];
 
 function showProvider(p) {
   $("gemini").hidden = p !== "gemini";
@@ -29,6 +29,7 @@ document.querySelector(`input[name=provider][value=${s.provider}]`).checked = tr
 showProvider(s.provider);
 document.querySelector(`input[name=engine][value=${s.engine}]`).checked = true;
 showEngine(s.engine);
+document.querySelector(`input[name=mode][value=${s.mode}]`).checked = true;
 document.querySelectorAll("input[name=engine]").forEach((r) => (r.onchange = () => showEngine(r.value)));
 for (const f of fields) {
   if (f === "speakAnswers") $(f).checked = s[f];
@@ -56,8 +57,8 @@ $("test").onclick = async () => {
   speechSynthesis.speak(u);
 };
 $("save").onclick = async () => {
-  const out = { provider: document.querySelector("input[name=provider]:checked").value, engine: document.querySelector("input[name=engine]:checked").value };
-  for (const f of fields) out[f] = f === "speakAnswers" ? $(f).checked : f === "rate" ? Number($(f).value) : $(f).value.trim();
+  const out = { provider: document.querySelector("input[name=provider]:checked").value, engine: document.querySelector("input[name=engine]:checked").value, mode: document.querySelector("input[name=mode]:checked").value };
+  for (const f of fields) out[f] = f === "speakAnswers" ? $(f).checked : f === "rate" ? Number($(f).value) : f === "lexicon" ? $(f).value : $(f).value.trim();
   await chrome.storage.local.set(out);
   $("saved").textContent = "Saved.";
   setTimeout(() => ($("saved").textContent = ""), 2000);
