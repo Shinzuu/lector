@@ -190,7 +190,19 @@
       }
       sections.forEach((sec, i) => (sec.label = "Section " + (i + 1)));
     }
-    return sections.filter((s) => s.items.length).map((s, id) => Object.assign(s, { id, skip: false, narration: null }));
+    // Long stretches (a whole week of notes under one heading) are cut into parts of about 25 sentences,
+    // so each part is narrated quickly and can be skipped on its own.
+    const PART = 25;
+    sections = sections.filter((s) => s.items.length).flatMap((s) => {
+      if (s.items.length <= PART * 1.4) return [s];
+      const n = Math.ceil(s.items.length / PART), out = [];
+      for (let k = 0; k < n; k++) {
+        const items = s.items.slice(k * PART, (k + 1) * PART);
+        out.push({ ...s, items, el: k ? null : s.el, label: `${s.label}.${k + 1}`, title: k ? items[0].text.slice(0, 80) : s.title });
+      }
+      return out;
+    });
+    return sections.map((s, id) => Object.assign(s, { id, skip: false, narration: null }));
   }
 
   // ---------- pronunciation ----------
@@ -322,6 +334,25 @@ NoSQL = No S Q L`;
   }
 
   // ---------- playback ----------
+  // ---------- progress ----------
+  // Time is estimated from the source word count: the neural voice speaks about 155 words a minute at 1x,
+  // and narration runs about as long as the source.
+  const WPM = 155;
+  const words = (sec) => (sec.words ??= sec.items.reduce((n, x) => n + x.text.split(/\s+/).length, 0));
+  const fmtTime = (min) => (min >= 60 ? `${Math.floor(min / 60)}h ${String(Math.round(min % 60)).padStart(2, "0")}m` : `${Math.max(1, Math.round(min))}m`);
+  function progress() {
+    let total = 0, done = 0;
+    state.sections.forEach((sec, k) => {
+      if (sec.skip) return;
+      const w = words(sec);
+      total += w;
+      if (k < state.sec) done += w;
+      else if (k === state.sec && state.items?.length) done += w * (state.i / state.items.length);
+    });
+    const rate = WPM * state.settings.rate;
+    return { pct: total ? Math.round((100 * done) / total) : 0, left: (total - done) / rate, total: total / rate };
+  }
+
   const included = (k, dir) => { for (; k >= 0 && k < state.sections.length; k += dir) if (!state.sections[k].skip) return k; return -1; };
 
   async function playSection(k, i = 0) {
@@ -332,6 +363,7 @@ NoSQL = No S Q L`;
     const sec = state.sections[k];
     setStatus(`${sec.label} · loading`);
     if (sec.el) sec.el.scrollIntoView({ behavior: "smooth", block: "start" });
+    else { const r = sec.items[0]?.range.getBoundingClientRect(); if (r) scrollBy({ top: r.top - 120, behavior: "smooth" }); }
     const items = await itemsFor(k);
     if (loop !== state.loop || !state.playing) return;
     if (state.mode === "narrated") { const n = included(k + 1, 1); if (n >= 0 && !state.sections[n].narration) requestNarration(n); }
@@ -348,7 +380,9 @@ NoSQL = No S Q L`;
     const it = items[i];
     highlight(it.range || sec.items[0]?.range, !it.range);
     caption(state.mode === "narrated" ? it.text : "");
-    setStatus(`${sec.label} · ${i + 1}/${items.length}`);
+    const pr = progress();
+    setStatus(`${sec.label} · ${pr.pct}% · ${fmtTime(pr.left)} left`);
+    ui.status.title = `${i + 1} of ${items.length} lines in this section. Whole read: ${fmtTime(pr.total)} at ${state.settings.rate}×, skipped sections not counted.`;
     state.heard.push(it.text);
     if (state.heard.length > 80) state.heard.shift();
     const next = items.slice(i + 1, i + 3).map((x) => x.text);
@@ -486,7 +520,7 @@ NoSQL = No S Q L`;
     svg{width:20px;height:20px;fill:currentColor}
     .chip{all:unset;cursor:pointer;padding:5px 10px;border-radius:999px;border:1px solid #3a362f;font-size:12px;white-space:nowrap;user-select:none}
     .chip:hover{background:#2f2c26} .chip.on{border-color:#d97757;color:#f0a385}
-    .status{min-width:96px;text-align:center;color:#a39d93;font-variant-numeric:tabular-nums;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+    .status{min-width:150px;text-align:center;color:#a39d93;font-variant-numeric:tabular-nums;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
     .sep{width:1px;height:20px;background:#3a362f;margin:0 3px;flex:none}
     .caption{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:2147483646;width:min(720px,calc(100vw - 32px));
       padding:10px 16px;border-radius:12px;background:rgb(29 27 23/.92);color:#f3efe8;font-size:17px;line-height:1.45;text-align:center;box-shadow:0 6px 24px rgb(0 0 0/.3)}
@@ -499,6 +533,7 @@ NoSQL = No S Q L`;
     .list input{all:revert;accent-color:#d97757;width:16px;height:16px;flex:none}
     .list .t{all:unset;cursor:pointer;flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .list .t b{color:#6b665e;font-weight:500;margin-right:6px}
+    .list .m{font-size:12px;color:#6b665e;font-variant-numeric:tabular-nums;flex:none}
     .list .tools{display:flex;gap:8px;margin-bottom:8px}
     .cur{font-size:13px;color:#6b665e;margin:0 0 10px;font-style:italic;max-height:4.5em;overflow:hidden}
     .ask-row{display:flex;gap:6px;align-items:center}
@@ -532,6 +567,8 @@ NoSQL = No S Q L`;
 
   function renderSections() {
     if (!ui.rows) return;
+    const pr = progress();
+    ui.listHead.textContent = `Sections · ${pr.pct}% done · ${fmtTime(pr.left)} left of ${fmtTime(pr.total)}`;
     ui.rows.replaceChildren(...state.sections.map((sec) => {
       const row = el("div", "row" + (sec.id === state.sec ? " now" : "") + (sec.skip ? " skip" : ""));
       const box = el("input");
@@ -541,8 +578,9 @@ NoSQL = No S Q L`;
       box.onchange = trusted(() => { sec.skip = !box.checked; renderSections(); });
       const t = el("button", "t");
       t.append(el("b", null, sec.label), document.createTextNode(sec.title));
+      const mins = el("span", "m", fmtTime(words(sec) / (WPM * state.settings.rate)));
       t.onclick = trusted(() => { sec.skip = false; ui.list.hidden = true; restartAt(sec.id, 0); });
-      row.append(box, t);
+      row.append(box, t, mins);
       return row;
     }));
   }
@@ -602,7 +640,8 @@ NoSQL = No S Q L`;
     none.onclick = trusted(() => { state.sections.forEach((s) => (s.skip = true)); renderSections(); });
     tools.append(all, none);
     ui.rows = el("div");
-    ui.list.append(el("h3", null, "Sections"), el("p", "hint", "Untick to skip. Click a title to jump there."), tools, ui.rows);
+    ui.listHead = el("h3", null, "Sections");
+    ui.list.append(ui.listHead, el("p", "hint", "Untick to skip. Click a title to jump there."), tools, ui.rows);
 
     ui.panel = el("div", "panel");
     ui.panel.hidden = true;

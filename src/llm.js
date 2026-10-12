@@ -55,6 +55,8 @@ export async function ask(settings, question, context, history) {
   return askGemini(settings, system, turns);
 }
 
+const FALLBACK_MODEL = "gemini-3.5-flash-lite";
+
 async function askGemini(s, system, turns, opts = {}) {
   if (!s.geminiKey) throw new Error("No Gemini key. Add one in Lector's Options (free at aistudio.google.com/apikey).");
   const model = encodeURIComponent(s.geminiModel || DEFAULTS.geminiModel);
@@ -66,11 +68,17 @@ async function askGemini(s, system, turns, opts = {}) {
   // Flash models think by default, which spends the output budget and adds seconds of silence.
   if (/2\.5-flash/.test(model)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
   else if (/gemini-3/.test(model)) body.generationConfig.thinkingConfig = { thinkingLevel: "minimal" };
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const call = (m) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": s.geminiKey },
     body: JSON.stringify(body),
   });
+  let r = await call(model);
+  // Busy (503) or rate-limited (429): retry once on the lighter model, which is rarely overloaded.
+  if ((r.status === 503 || r.status === 429) && model !== FALLBACK_MODEL) {
+    if (body.generationConfig.thinkingConfig?.thinkingBudget != null) delete body.generationConfig.thinkingConfig;
+    r = await call(FALLBACK_MODEL);
+  }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${j.error?.message || r.statusText}`);
   const text = (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();

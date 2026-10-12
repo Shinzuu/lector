@@ -131,8 +131,8 @@ try {
     status: u.status?.textContent || '', hl: CSS.highlights.has('lector-current') }; })()`, iso);
   const leak = await page.evaluate(`({ shadow: document.getElementById('lector-host')?.shadowRoot === null, api: typeof window.__lector })`);
   check("page scripts cannot reach the panel or reader", leak.shadow && leak.api === "undefined", JSON.stringify(leak));
-  const total = Number((webUi.status.split("/")[1] || "0").trim());
-  check("web page: reader bar appears with sentences", webUi.bar && total > 20, `status "${webUi.status}", highlight ${webUi.hl}`);
+  const total = /% · .+ left/.test(webUi.status) ? 1 : 0;
+  check("web page: reader bar shows progress and time left", webUi.bar && total, `status "${webUi.status}", highlight ${webUi.hl}`);
   await shot("2-web-reading");
 
   // 3. Ask with an invalid key: real request to Gemini, error must come back to the panel.
