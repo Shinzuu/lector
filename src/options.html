@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lector settings</title>
+<style>
+  :root{--bg:#faf7f2;--ink:#1f1d1a;--mute:#6b665e;--card:#fff;--line:#e4ddd2;--acc:#d97757;color-scheme:light}
+  @media (prefers-color-scheme: dark){:root{--bg:#14130f;--ink:#f3efe8;--mute:#a39d93;--card:#1d1b17;--line:#2c2a25;color-scheme:dark}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:640px;margin:0 auto;padding:40px 16px 80px}
+  h1{font-size:28px;margin:0 0 4px} h1 span{color:var(--acc)}
+  .lead{color:var(--mute);margin:0 0 28px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+  h2{font-size:16px;margin:0 0 12px}
+  label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+  input[type=text],input[type=password],select{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+  input:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+  .radio{display:flex;gap:18px;margin-top:4px} .radio label{display:flex;gap:6px;align-items:center;margin:0;color:var(--ink);font-size:15px}
+  .row{display:flex;gap:10px;align-items:center}
+  .hint{font-size:13px;color:var(--mute);margin:6px 0 0}
+  a{color:var(--acc)}
+  button{cursor:pointer;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:14px}
+  button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+  #saved{color:var(--mute);font-size:13px}
+  kbd{font:12px ui-monospace,monospace;padding:1px 6px;border:1px solid var(--line);border-radius:5px}
+  td{padding:3px 12px 3px 0;vertical-align:top}
+</style>
+</head>
+<body>
+<main>
+  <h1><span>Lector</span> settings</h1>
+  <p class="lead">Reads pages and PDFs aloud. Pause any time to ask about what you just heard.</p>
+
+  <section>
+    <h2>Question answering</h2>
+    <div class="radio">
+      <label><input type="radio" name="provider" value="gemini"> Gemini (free)</label>
+      <label><input type="radio" name="provider" value="anthropic"> Claude (API key)</label>
+    </div>
+    <div id="gemini">
+      <label for="geminiKey">Gemini API key</label>
+      <input type="password" id="geminiKey" autocomplete="off" placeholder="AIza…">
+      <p class="hint">Free from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+        On the free tier, Google may use prompts to improve its models.</p>
+      <label for="geminiModel">Model</label>
+      <input type="text" id="geminiModel">
+    </div>
+    <div id="anthropic">
+      <label for="anthropicKey">Anthropic API key</label>
+      <input type="password" id="anthropicKey" autocomplete="off" placeholder="sk-ant-…">
+      <p class="hint">From <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>, billed per use.
+        A Claude Code or claude.ai login does not work here.</p>
+      <label for="anthropicModel">Model</label>
+      <input type="text" id="anthropicModel">
+    </div>
+    <p class="hint">Keys are stored only in this browser (<code>chrome.storage.local</code>) and sent only to the provider you pick.</p>
+  </section>
+
+  <section>
+    <h2>Voice</h2>
+    <label for="voiceURI">Voice</label>
+    <select id="voiceURI"></select>
+    <label for="rate">Speed: <span id="rateOut"></span></label>
+    <input type="range" id="rate" min="0.7" max="2" step="0.05" style="width:100%">
+    <label class="row" style="color:var(--ink);font-size:15px"><input type="checkbox" id="speakAnswers"> Read answers aloud</label>
+    <div class="row" style="margin-top:12px"><button id="test">Test voice</button></div>
+  </section>
+
+  <section>
+    <h2>Keys</h2>
+    <table>
+      <tr><td><kbd>Alt+Shift+R</kbd></td><td>Start or stop reading (or click the toolbar icon)</td></tr>
+      <tr><td><kbd>Alt+Shift+A</kbd> or <kbd>A</kbd></td><td>Pause and ask. Speak, or type. Then say “continue”.</td></tr>
+      <tr><td><kbd>Space</kbd></td><td>Play / pause</td></tr>
+      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Previous / next sentence</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Close the question panel, or stop</td></tr>
+    </table>
+    <p class="hint">Select text and right-click “Lector: read from here” to start at that point. Change shortcuts at <code>chrome://extensions/shortcuts</code>.</p>
+  </section>
+
+  <div class="row"><button class="primary" id="save">Save</button><span id="saved"></span></div>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>

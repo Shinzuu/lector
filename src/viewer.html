@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lector PDF</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+<header>
+  <strong>Lector</strong>
+  <span id="name">No PDF open</span>
+  <label class="open">Open PDF<input type="file" id="file" accept="application/pdf" hidden></label>
+  <button id="read" disabled>Read aloud <kbd>Alt+Shift+R</kbd></button>
+</header>
+<main id="pages">
+  <div id="drop">
+    <p><b>Drop a PDF here</b> or use <b>Open PDF</b>.</p>
+    <p class="hint">PDFs from websites open here when you click the Lector button on them.
+      For PDFs on disk, either open them with the button above, or turn on
+      “Allow access to file URLs” for Lector in <code>chrome://extensions</code>.</p>
+  </div>
+</main>
+<script src="reader.js"></script>
+<script type="module" src="viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Lector",
+  "version": "0.1.0",
+  "description": "Reads web pages and PDFs aloud with sentence highlighting. Pause, ask a question about what you just heard, then carry on.",
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "action": { "default_title": "Lector: read this page (Alt+Shift+R)" },
+  "background": { "service_worker": "src/background.js", "type": "module" },
+  "options_page": "src/options.html",
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.anthropic.com/*",
+    "<all_urls>"
+  ],
+  "commands": {
+    "_execute_action": { "suggested_key": { "default": "Alt+Shift+R" }, "description": "Start or stop reading" },
+    "ask": { "suggested_key": { "default": "Alt+Shift+A" }, "description": "Pause and ask a question" }
+  },
+  "web_accessible_resources": [{ "resources": ["vendor/pdfjs/*"], "matches": ["<all_urls>"] }]
+}

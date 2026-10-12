@@ -1,0 +1,27 @@
+:root{--bg:#ece8e1;--ink:#1f1d1a;--mute:#6b665e;--bar:#faf7f2;--line:#e4ddd2;--acc:#d97757;color-scheme:light}
+@media (prefers-color-scheme: dark){:root{--bg:#0f0e0c;--ink:#f3efe8;--mute:#a39d93;--bar:#1d1b17;--line:#2c2a25;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:10;display:flex;gap:12px;align-items:center;padding:10px 16px;background:var(--bar);border-bottom:1px solid var(--line)}
+header strong{color:var(--acc)}
+#name{flex:1;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.open,#read{cursor:pointer;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:14px}
+#read{background:var(--acc);border-color:var(--acc);color:#fff}
+#read:disabled{opacity:.4;cursor:default}
+kbd{font:11px ui-monospace,monospace;opacity:.8;margin-left:4px}
+main{padding:24px 16px 120px;display:flex;flex-direction:column;align-items:center;gap:16px}
+#drop{margin-top:10vh;max-width:520px;padding:32px;border:2px dashed var(--line);border-radius:16px;text-align:center}
+#drop.over{border-color:var(--acc)}
+.hint{color:var(--mute);font-size:13px}
+.page{position:relative;background:#fff;box-shadow:0 2px 10px rgb(0 0 0/.15)}
+.page canvas{display:block;width:100%;height:100%}
+.error{color:#b3261e}
+
+/* pdf.js text layer (from pdf.js's pdf_viewer.css, trimmed to what Lector uses) */
+.textLayer{position:absolute;text-align:initial;inset:0;overflow:clip;opacity:1;line-height:1;text-size-adjust:none;forced-color-adjust:none;transform-origin:0 0;caret-color:CanvasText;z-index:0}
+.textLayer :is(span,br){color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%}
+.textLayer > :not(.markedContent),.textLayer .markedContent span:not(.markedContent){z-index:1}
+.textLayer span.markedContent{top:0;height:0}
+.textLayer ::selection{background:rgb(0 0 255/.25)}
+.textLayer br::selection{background:transparent}
+.textLayer .endOfContent{display:block;position:absolute;inset:100% 0 0;z-index:0;cursor:default;user-select:none}
